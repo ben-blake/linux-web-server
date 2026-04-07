@@ -15,10 +15,10 @@ Web-based interface for managing a Network Attached Storage (NAS) server.
 
 | Module | Blueprint | Templates | Owner |
 |--------|-----------|-----------|-------|
-| User Management | `blueprints/auth.py`, `blueprints/users.py` | `templates/users/` | Ben Blake <ben.blake@umkc.edu>|
-| File Management | `blueprints/files.py` | `templates/files/` | TBD |
-| System Monitoring | `blueprints/monitor.py` | `templates/monitor/` | TBD |
-| Backup & Restore | `blueprints/backup.py` | `templates/backup/` | TBD |
+| User Management | `blueprints/auth.py`, `blueprints/users.py` | `templates/users/` | Ben Blake |
+| File Management | `blueprints/files.py` | `templates/files/` | Rasagyna Peddapalli |
+| System Monitoring | `blueprints/monitor.py` | `templates/monitor/` | Bhavya Harshitha Chennu |
+| Backup & Restore | `blueprints/backup.py` | `templates/backup/` | Mukunda Chakravartula |
 
 ## How to Work on Your Module
 
