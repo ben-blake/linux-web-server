@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NAS Server{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <div class="layout">
+        <nav class="sidebar">
+            <h2>NAS Server</h2>
+            <ul>
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('files.index') }}">Files</a></li>
+                {% if session.get('role') == 'admin' %}
+                <li><a href="{{ url_for('users.list_users') }}">Users</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('monitor.index') }}">Monitor</a></li>
+                {% if session.get('role') == 'admin' %}
+                <li><a href="{{ url_for('backup.index') }}">Backups</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <main class="content">
+            <header class="topbar">
+                <span>Logged in as <strong>{{ session.get('username') }}</strong> ({{ session.get('role') }})</span>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
+            </header>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        {% block public_content %}{% endblock %}
+    {% endif %}
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
