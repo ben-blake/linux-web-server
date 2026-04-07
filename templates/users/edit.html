@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Edit User — NAS Server{% endblock %}
+
+{% block content %}
+<h1>Edit User: {{ user['username'] }}</h1>
+<form method="POST" style="max-width: 500px;">
+    <label for="role">Role</label>
+    <select id="role" name="role">
+        <option value="user" {% if user['role'] == 'user' %}selected{% endif %}>User</option>
+        <option value="admin" {% if user['role'] == 'admin' %}selected{% endif %}>Admin</option>
+    </select>
+
+    <label>Permissions</label>
+    <div style="margin-top: 5px;">
+        <label><input type="checkbox" name="permissions" value="read" {% if 'read' in user['permissions'] %}checked{% endif %}> Read</label><br>
+        <label><input type="checkbox" name="permissions" value="write" {% if 'write' in user['permissions'] %}checked{% endif %}> Write</label><br>
+        <label><input type="checkbox" name="permissions" value="edit" {% if 'edit' in user['permissions'] %}checked{% endif %}> Edit</label><br>
+        <label><input type="checkbox" name="permissions" value="admin" {% if 'admin' in user['permissions'] %}checked{% endif %}> Admin</label>
+    </div>
+
+    <button type="submit">Save Changes</button>
+</form>
+<a href="{{ url_for('users.list_users') }}">Back to Users</a>
+{% endblock %}

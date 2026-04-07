@@ -21,6 +21,7 @@
                 {% if session.get('role') == 'admin' %}
                 <li><a href="{{ url_for('backup.index') }}">Backups</a></li>
                 {% endif %}
+                <li><a href="{{ url_for('users.profile') }}">My Profile</a></li>
             </ul>
         </nav>
         <main class="content">

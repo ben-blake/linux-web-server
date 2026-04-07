@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Create User — NAS Server{% endblock %}
+
+{% block content %}
+<h1>Create User</h1>
+<form method="POST" style="max-width: 500px;">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <label for="role">Role</label>
+    <select id="role" name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+    </select>
+
+    <label>Permissions</label>
+    <div style="margin-top: 5px;">
+        <label><input type="checkbox" name="permissions" value="read" checked> Read</label><br>
+        <label><input type="checkbox" name="permissions" value="write"> Write</label><br>
+        <label><input type="checkbox" name="permissions" value="edit"> Edit</label><br>
+        <label><input type="checkbox" name="permissions" value="admin"> Admin</label>
+    </div>
+
+    <button type="submit">Create User</button>
+</form>
+<a href="{{ url_for('users.list_users') }}">Back to Users</a>
+{% endblock %}
