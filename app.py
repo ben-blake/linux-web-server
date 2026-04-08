@@ -45,6 +45,11 @@ def create_app():
             last_backup=last_backup['created_at'] if last_backup else 'Never'
         )
 
+    @app.after_request
+    def add_ngrok_header(response):
+        response.headers['ngrok-skip-browser-warning'] = 'true'
+        return response
+
     return app
 
 
