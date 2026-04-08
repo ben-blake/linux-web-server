@@ -1,4 +1,4 @@
-# System Monitoring Module — Guide for Rasagyna
+# System Monitoring Module — Guide for Bhavya
 
 You own the **System Monitoring** module. This shows real-time system stats (CPU, memory, disk) and lets users view system logs.
 

@@ -1,4 +1,4 @@
-# File Management Module — Guide for Mukunda
+# File Management Module — Guide for Rasagyna
 
 You own the **File Management** module. This lets users upload, download, and delete files, and create/rename/delete folders on the NAS.
 
@@ -54,7 +54,7 @@ Files are stored on disk in a directory defined in `config.py`:
 
 ```python
 import config
-storage_path = config.NAS_STORAGE  # defaults to ./storage/
+storage_path = config.NAS_STORAGE  # /srv/nas
 ```
 
 File metadata (name, path, size, who uploaded it) gets saved to the `files` database table:

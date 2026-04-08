@@ -1,4 +1,4 @@
-# Backup & Restore Module — Guide for Bhavya
+# Backup & Restore Module — Guide for Mukunda
 
 You own the **Backup & Restore** module. This lets admins create backups of the NAS storage, schedule automatic backups, and restore from previous backups.
 
@@ -47,8 +47,8 @@ git checkout -b feature/backup-restore
 ### How It Works
 
 - **Backups** = compressed `.tar.gz` archives of the NAS storage directory
-- **Storage directory** (what gets backed up): `config.NAS_STORAGE` (defaults to `./storage/`)
-- **Backup directory** (where archives go): `config.NAS_BACKUPS` (defaults to `./backups/`)
+- **Storage directory** (what gets backed up): `config.NAS_STORAGE` (`/srv/nas`)
+- **Backup directory** (where archives go): `config.NAS_BACKUPS` (`/srv/nas-backups`)
 - **Backup metadata** is stored in the `backups` database table:
 
 ```sql
