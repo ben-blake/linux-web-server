@@ -53,65 +53,13 @@ def _disk_stats_for_storage():
         if total <= 0:
             return None
         used = total - usage.free
-        used_ratio = used / total
-        used_pct_precise = min(100.0, max(0.0, 100 * used_ratio))
         return {
-            'free_gb': round(usage.free / (1024**3), 2),
-            'total_gb': round(total / (1024**3), 2),
-            'used_gb': round(used / (1024**3), 2),
-            'used_pct': round(used_pct_precise, 1),
-            'used_pct_fine': round(used_pct_precise, 4),
-            'used_frac_for_bar': round(used_pct_precise, 5),
-            'used_mib_fmt': f"{used / (1024**2):,.2f}",
-            'free_mib_fmt': f"{usage.free / (1024**2):,.2f}",
+            'free_gb': round(usage.free / (1024**3), 1),
+            'total_gb': round(total / (1024**3), 1),
+            'used_pct': round(100 * used / total, 1),
         }
     except OSError:
         return None
-
-
-def _nas_tree_usage(abs_root):
-    """Total file bytes and file count under NAS root."""
-    abs_root = os.path.realpath(abs_root)
-    total_bytes = 0
-    file_count = 0
-    try:
-        for dirpath, _, filenames in os.walk(abs_root, followlinks=False):
-            for fn in filenames:
-                fp = os.path.join(dirpath, fn)
-                try:
-                    if os.path.isfile(fp):
-                        total_bytes += os.path.getsize(fp)
-                        file_count += 1
-                except OSError:
-                    continue
-    except OSError:
-        return {'total_bytes': 0, 'file_count': 0, 'meter_pct': 0.0, 'meter_label': ''}
-    tiers = [
-        1 * 1024 * 1024,
-        10 * 1024 * 1024,
-        100 * 1024 * 1024,
-        1 * 1024 * 1024 * 1024,
-        10 * 1024 * 1024 * 1024,
-        100 * 1024 * 1024 * 1024,
-    ]
-    ceiling = None
-    for t in tiers:
-        if total_bytes <= t:
-            ceiling = t
-            break
-    if ceiling is None:
-        ceiling = tiers[-1]
-    meter_pct = min(100.0, round(100 * total_bytes / ceiling, 1)) if ceiling else 0.0
-    if ceiling >= 1024**3:
-        cap_label = f'{ceiling // (1024**3)} GB scale'
-    else:
-        cap_label = f'{ceiling // (1024**2)} MB scale'
-    return {
-        'total_bytes': total_bytes,
-        'file_count': file_count,
-        'meter_pct': meter_pct,
-        'meter_label': cap_label,
-    }
 
 
 def _list_directory(abs_dir):
@@ -198,9 +146,6 @@ def index():
     can_write = 'write' in perms
     can_edit = 'edit' in perms
 
-    root = _storage_root()
-    nas_usage = _nas_tree_usage(root)
-
     return render_template(
         'files/index.html',
         entries=entries,
@@ -209,7 +154,6 @@ def index():
         can_write=can_write,
         can_edit=can_edit,
         entry_count=len(entries),
-        nas_usage=nas_usage,
         storage_stats=_disk_stats_for_storage(),
     )
 

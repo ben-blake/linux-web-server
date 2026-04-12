@@ -54,6 +54,10 @@ body {
     flex-direction: column;
     box-shadow: 6px 0 32px rgba(15, 23, 42, 0.2);
     border-right: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .sidebar-top {
@@ -1027,17 +1031,39 @@ th {
     accent-color: var(--accent);
 }
 
-/* Files: storage meter & filter */
+/* Files: storage summary & disk bar */
 .storage-summary {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 18px 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px 20px;
     margin-bottom: 18px;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    font-size: 0.875rem;
+}
+
+.disk-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 200px;
+}
+
+.disk-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.disk-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
 }
 
 .storage-summary-text {

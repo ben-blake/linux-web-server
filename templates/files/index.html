@@ -17,56 +17,18 @@
 </div>
 
 <div class="storage-summary">
-    <div class="storage-summary-text">
+    <span>
         <strong>{{ entry_count }}</strong> item{% if entry_count != 1 %}s{% endif %} in this folder
         {% if current_path %}<span class="mono-muted"> · {{ current_path }}</span>{% endif %}
-    </div>
-    <div class="storage-meters">
-        <div class="storage-meter-card">
-            <div class="storage-heading">NAS vault (your uploads)</div>
-            <p class="storage-meter-detail">
-                <strong>{{ fmt_size(nas_usage.total_bytes) }}</strong> in <strong>{{ nas_usage.file_count }}</strong> file{% if nas_usage.file_count != 1 %}s{% endif %}
-                under storage (all folders)
-            </p>
-            <p class="storage-meter-note">This total updates every time you refresh after uploading or deleting. It is not the same as "whole PC disk" usage below.</p>
-            <div class="storage-meter-wrap">
-                <div class="storage-meter-label">
-                    <span>Vault bar ({{ nas_usage.meter_label }})</span>
-                    <span>{{ nas_usage.meter_pct }}%</span>
-                </div>
-                <div class="storage-meter" role="progressbar" aria-valuenow="{{ nas_usage.meter_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="NAS vault relative to display scale">
-                    <div class="storage-meter-fill storage-meter-fill--nas" style="width: {{ nas_usage.meter_pct }}%;"></div>
-                </div>
-            </div>
+    </span>
+    {% if storage_stats %}
+    <div class="disk-bar-wrap">
+        <span class="mono-muted">{{ storage_stats.free_gb }} GB free of {{ storage_stats.total_gb }} GB</span>
+        <div class="disk-bar">
+            <div class="disk-bar-fill" style="width: {{ storage_stats.used_pct }}%;"></div>
         </div>
-        {% if storage_stats %}
-        <div class="storage-meter-card storage-meter-card--host">
-            <div class="storage-heading">Host system disk</div>
-            <p class="storage-meter-detail">
-                Volume <strong>{{ storage_stats.total_gb }} GB</strong> total ·
-                about <strong>{{ storage_stats.used_gb }} GB</strong> used ·
-                <strong>{{ storage_stats.free_gb }} GB</strong> free
-            </p>
-            <p class="storage-meter-detail mono-muted" style="font-size: 0.8rem;">
-                Measured: <strong>{{ storage_stats.used_mib_fmt }}</strong> MiB used ·
-                <strong>{{ storage_stats.free_mib_fmt }}</strong> MiB free
-                <span class="storage-meter-note" style="display:block;margin-top:6px;margin-bottom:0;">
-                    On a drive this large ({{ storage_stats.total_gb }} GB total), a few megabytes in the NAS folder barely change the <strong>rounded</strong> percent or the bar.
-                    Watch the <strong>MiB</strong> line after refresh — it should tick down (free) / up (used) when files are written to this disk.
-                </span>
-            </p>
-            <div class="storage-meter-wrap">
-                <div class="storage-meter-label">
-                    <span>Whole drive used</span>
-                    <span title="Rounded to 0.1% — use MiB line for small changes">{{ storage_stats.used_pct }}% · {{ storage_stats.used_pct_fine }}%</span>
-                </div>
-                <div class="storage-meter" role="progressbar" aria-valuenow="{{ storage_stats.used_frac_for_bar }}" aria-valuemin="0" aria-valuemax="100">
-                    <div class="storage-meter-fill" style="width: {{ storage_stats.used_frac_for_bar }}%;"></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 
 <nav class="breadcrumb" aria-label="Folder path">

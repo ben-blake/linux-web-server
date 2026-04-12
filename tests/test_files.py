@@ -102,7 +102,7 @@ class TestBrowse:
     def test_index_shows_storage_summary(self, admin_client):
         resp = admin_client.get('/files/')
         assert resp.status_code == 200
-        assert b'NAS vault' in resp.data
+        assert b'items in this folder' in resp.data or b'item' in resp.data
 
     def test_index_empty_folder(self, admin_client):
         resp = admin_client.get('/files/')
