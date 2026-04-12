@@ -1,11 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Backups — NAS Server{% endblock %}
+
 {% block content %}
 <div class="page-header">
-    <h1>Backup &amp; restore</h1>
-    <p>Schedule backups and restore data. This module is still under development.</p>
+    <span class="eyebrow">Admin</span>
+    <h1>Backup &amp; Restore</h1>
+    <p>Create and manage backups of the NAS storage. Only admins can access this section.</p>
 </div>
-<div class="form-panel">
-    <p style="color: var(--text-muted);">Backup jobs and restore tools will be wired here for administrators.</p>
+
+<div class="files-toolbar" style="margin-bottom: 1.5rem;">
+    <div class="toolbar-card">
+        <h3>Manual backup</h3>
+        <p style="color: var(--text-muted); margin-bottom: 0.75rem;">
+            Creates a <code>.tar.gz</code> snapshot of all files in storage right now.
+        </p>
+        <form method="POST" action="{{ url_for('backup.create') }}">
+            <button type="submit" class="btn btn-primary">Create backup now</button>
+        </form>
+    </div>
+    <div class="toolbar-card">
+        <h3>Automatic schedule</h3>
+        {% if scheduled_job %}
+        <p style="color: var(--text-muted); margin-bottom: 0.75rem;">
+            Scheduled every <strong>{{ scheduled_job.trigger.interval }}</strong>.
+        </p>
+        {% else %}
+        <p style="color: var(--text-muted); margin-bottom: 0.75rem;">No automatic schedule configured.</p>
+        {% endif %}
+        <a href="{{ url_for('backup.schedule') }}" class="btn btn-outline">Configure schedule</a>
+    </div>
+</div>
+
+<div class="file-table-wrap">
+    <table id="backups-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for backup in backups %}
+            <tr>
+                <td class="mono-muted">{{ backup['name'] }}</td>
+                <td>
+                    <span class="type-pill type-pill--{{ backup['type'] }}">{{ backup['type'] }}</span>
+                </td>
+                <td class="mono-muted">{{ (backup['size'] / 1048576) | round(1) }} MB</td>
+                <td class="mono-muted">{{ backup['created_at'] }}</td>
+                <td class="file-actions-cell">
+                    <div class="file-actions">
+                        <div class="file-actions-primary">
+                            <form method="POST" action="{{ url_for('backup.restore', backup_id=backup['id']) }}">
+                                <button type="submit" class="btn btn-sm btn-outline"
+                                    onclick="return confirm('Restore from this backup? Current storage files will be replaced.')">
+                                    Restore
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('backup.delete', backup_id=backup['id']) }}">
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this backup? This cannot be undone.')">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <strong>No backups yet</strong>
+                        Use "Create backup now" to take your first snapshot.
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

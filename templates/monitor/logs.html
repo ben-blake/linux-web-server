@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}System Logs — NAS Server{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <span class="eyebrow">System</span>
+    <h1>System Logs</h1>
+    <p>Last 100 lines{% if log_source %} from <code>{{ log_source }}</code>{% endif %}.</p>
+</div>
+
+<div style="margin-bottom: 1rem;">
+    <a href="{{ url_for('monitor.index') }}" class="btn btn-outline btn-sm">Back to Monitor</a>
+</div>
+
+<div class="file-table-wrap">
+    <pre class="log-viewer">{% for line in log_lines %}{{ line }}{% endfor %}</pre>
+</div>
+{% endblock %}
