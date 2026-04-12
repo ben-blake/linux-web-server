@@ -7,3 +7,4 @@ backups/
 docs/
 CLAUDE.md
 .pytest_cache/
+.vscode/
