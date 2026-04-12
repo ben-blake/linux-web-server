@@ -1,3 +1,8 @@
+import os
+
+import config
+
+
 def test_admin_can_view_user_list(admin_client):
     resp = admin_client.get('/users/')
     assert resp.status_code == 200
@@ -69,3 +74,53 @@ def test_user_can_change_own_password(user_client):
     }, follow_redirects=True)
     assert resp.status_code == 200
     assert b'updated' in resp.data.lower()
+
+
+def test_delete_user_nullifies_file_ownership(admin_client, app):
+    """Deleting a user sets uploaded_by to NULL on their files rather than leaving a dangling FK."""
+    admin_client.post('/users/create', data={
+        'username': 'uploader',
+        'password': 'pass',
+        'role': 'user',
+        'permissions': 'read,write',
+    })
+    with app.app_context():
+        from database import get_db
+        db = get_db()
+        uploader = db.execute("SELECT id FROM users WHERE username = 'uploader'").fetchone()
+        filepath = os.path.join(config.NAS_STORAGE, 'owned.txt')
+        with open(filepath, 'wb') as f:
+            f.write(b'x')
+        db.execute(
+            'INSERT INTO files (filename, filepath, size, uploaded_by) VALUES (?, ?, ?, ?)',
+            ('owned.txt', filepath, 1, uploader['id']),
+        )
+        db.commit()
+        user_id = uploader['id']
+        db.close()
+
+    admin_client.post(f'/users/{user_id}/delete', follow_redirects=True)
+
+    with app.app_context():
+        from database import get_db
+        db = get_db()
+        row = db.execute("SELECT uploaded_by FROM files WHERE filename = 'owned.txt'").fetchone()
+        db.close()
+    assert row is not None
+    assert row['uploaded_by'] is None
+
+
+def test_duplicate_username_rejected(admin_client):
+    admin_client.post('/users/create', data={
+        'username': 'dupeuser',
+        'password': 'pass',
+        'role': 'user',
+        'permissions': 'read',
+    })
+    resp = admin_client.post('/users/create', data={
+        'username': 'dupeuser',
+        'password': 'pass',
+        'role': 'user',
+        'permissions': 'read',
+    }, follow_redirects=True)
+    assert b'already exists' in resp.data

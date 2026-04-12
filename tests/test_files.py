@@ -334,6 +334,58 @@ class TestDelete:
 
 
 # ---------------------------------------------------------------------------
+# Database consistency
+# ---------------------------------------------------------------------------
+
+class TestDatabaseConsistency:
+    def test_stale_record_pruned_on_browse(self, admin_client, app):
+        """A file deleted outside the app is removed from the DB when /files/ is visited."""
+        _upload(admin_client, 'external.txt', b'x')
+        os.remove(os.path.join(config.NAS_STORAGE, 'external.txt'))
+        admin_client.get('/files/')
+        with app.app_context():
+            from database import get_db
+            db = get_db()
+            row = db.execute("SELECT id FROM files WHERE filename = 'external.txt'").fetchone()
+            db.close()
+        assert row is None
+
+    def test_dashboard_count_correct_after_prune(self, admin_client, app):
+        """Dashboard file_count is 0 after an externally deleted file is pruned."""
+        _upload(admin_client, 'counted.txt', b'x')
+        os.remove(os.path.join(config.NAS_STORAGE, 'counted.txt'))
+        admin_client.get('/files/')  # triggers prune
+        with app.app_context():
+            from database import get_db
+            db = get_db()
+            count = db.execute('SELECT COUNT(*) FROM files').fetchone()[0]
+            db.close()
+        assert count == 0
+
+    def test_upload_same_file_twice_one_db_record(self, admin_client, app):
+        """Re-uploading a file updates the existing record rather than inserting a duplicate."""
+        _upload(admin_client, 'once.txt', b'v1')
+        _upload(admin_client, 'once.txt', b'v2')
+        with app.app_context():
+            from database import get_db
+            db = get_db()
+            rows = db.execute("SELECT id FROM files WHERE filename = 'once.txt'").fetchall()
+            db.close()
+        assert len(rows) == 1
+
+    def test_upload_overwrite_updates_size_in_db(self, admin_client, app):
+        """Re-uploading a file updates its recorded size in the DB."""
+        _upload(admin_client, 'sized.txt', b'small')
+        _upload(admin_client, 'sized.txt', b'much larger content here')
+        with app.app_context():
+            from database import get_db
+            db = get_db()
+            row = db.execute("SELECT size FROM files WHERE filename = 'sized.txt'").fetchone()
+            db.close()
+        assert row['size'] == len(b'much larger content here')
+
+
+# ---------------------------------------------------------------------------
 # Path traversal / security
 # ---------------------------------------------------------------------------
 

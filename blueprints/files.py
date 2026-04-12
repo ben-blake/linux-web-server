@@ -90,6 +90,15 @@ def _list_directory(abs_dir):
     return entries
 
 
+def _prune_missing_files(db):
+    """Remove DB records for files that no longer exist on disk."""
+    rows = db.execute('SELECT id, filepath FROM files').fetchall()
+    for row in rows:
+        if not os.path.isfile(row['filepath']):
+            db.execute('DELETE FROM files WHERE id = ?', (row['id'],))
+    db.commit()
+
+
 def _remove_db_paths_for_prefix(db, prefix_abs):
     prefix_abs = os.path.realpath(prefix_abs)
     root_prefix = prefix_abs + os.sep
@@ -131,6 +140,10 @@ def index():
     if not os.path.isdir(current):
         flash('Folder not found.', 'error')
         return redirect(url_for('files.index'))
+
+    db = get_db()
+    _prune_missing_files(db)
+    db.close()
 
     entries = _list_directory(current)
     breadcrumbs = []

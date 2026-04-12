@@ -71,6 +71,8 @@ def edit_user(user_id):
 @admin_required
 def delete_user(user_id):
     db = get_db()
+    db.execute('UPDATE files SET uploaded_by = NULL WHERE uploaded_by = ?', (user_id,))
+    db.execute('UPDATE backups SET created_by = NULL WHERE created_by = ?', (user_id,))
     db.execute('DELETE FROM users WHERE id = ?', (user_id,))
     db.commit()
     db.close()

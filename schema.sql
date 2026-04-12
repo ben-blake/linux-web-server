@@ -10,19 +10,19 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT NOT NULL,
-    filepath TEXT NOT NULL,
+    filepath TEXT NOT NULL UNIQUE,
     size INTEGER,
-    uploaded_by INTEGER REFERENCES users(id),
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS backups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    filepath TEXT NOT NULL,
+    filepath TEXT NOT NULL UNIQUE,
     size INTEGER,
     type TEXT NOT NULL DEFAULT 'manual',
-    created_by INTEGER REFERENCES users(id),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
