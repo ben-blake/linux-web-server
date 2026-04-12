@@ -1,6 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Monitor — NAS Server{% endblock %}
+
 {% block content %}
 <h1>System Monitor</h1>
-<p>This module is under development.</p>
+<meta http-equiv="refresh" content="5">
+
+<div class="card-grid">
+    <div class="card">
+        <h3>CPU Usage</h3>
+        <p class="card-number">{{ cpu_percent }}%</p>
+    </div>
+    <div class="card">
+        <h3>Memory</h3>
+        <p class="card-number">{{ memory.percent }}%</p>
+        <p>{{ memory.used }} GB / {{ memory.total }} GB</p>
+    </div>
+    <div class="card">
+        <h3>Disk</h3>
+        <p class="card-number">{{ disk.percent }}%</p>
+        <p>{{ disk.used }} GB / {{ disk.total }} GB</p>
+    </div>
+</div>
+
+<div style="margin-top: 30px;">
+    <a href="{{ url_for('monitor.logs') }}" class="btn btn-primary">View System Logs</a>
+</div>
 {% endblock %}
