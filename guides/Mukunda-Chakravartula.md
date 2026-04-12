@@ -7,7 +7,7 @@ This is the second hardest module — it involves file archiving, scheduling, an
 ## Getting Started
 
 ```bash
-git clone https://github.com/benblake0/linux-web-server.git
+git clone https://github.com/ben-blake/linux-web-server.git
 cd linux-web-server
 python3 -m venv .venv
 source .venv/bin/activate

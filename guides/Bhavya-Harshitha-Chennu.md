@@ -5,7 +5,7 @@ You own the **System Monitoring** module. This shows real-time system stats (CPU
 ## Getting Started
 
 ```bash
-git clone https://github.com/benblake0/linux-web-server.git
+git clone https://github.com/ben-blake/linux-web-server.git
 cd linux-web-server
 python3 -m venv .venv
 source .venv/bin/activate
