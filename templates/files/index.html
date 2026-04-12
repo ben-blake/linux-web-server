@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Files — NAS Server{% endblock %}
+<<<<<<< HEAD
 
 {% macro fmt_size(bytes) -%}
     {%- if bytes is none -%}—
@@ -216,4 +217,9 @@
     <strong>write</strong> — upload, delete, new folder;
     <strong>edit</strong> — rename files and folders.
 </p>
+=======
+{% block content %}
+<h1>File Management</h1>
+<p>This module is under development.</p>
+>>>>>>> origin/main
 {% endblock %}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 import shutil
 from datetime import datetime
@@ -8,10 +9,15 @@ from werkzeug.utils import secure_filename
 import config
 from database import get_db
 from utils.decorators import permission_required
+=======
+from flask import Blueprint, render_template
+from utils.decorators import login_required
+>>>>>>> origin/main
 
 files_bp = Blueprint('files', __name__, url_prefix='/files')
 
 
+<<<<<<< HEAD
 def _storage_root():
     return os.path.realpath(os.path.abspath(config.NAS_STORAGE))
 
@@ -377,3 +383,9 @@ def delete_item():
 
     flash('Deleted.', 'success')
     return redirect(url_for('files.index', path=parent_rel))
+=======
+@files_bp.route('/')
+@login_required
+def index():
+    return render_template('files/index.html')
+>>>>>>> origin/main

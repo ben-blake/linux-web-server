@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 (function () {
     'use strict';
 
@@ -74,3 +75,6 @@
         });
     }
 })();
+=======
+// Shared JavaScript — add as needed
+>>>>>>> origin/main
