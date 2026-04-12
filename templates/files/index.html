@@ -19,7 +19,7 @@
         <div class="disk-bar-wrap">
             <span class="mono-muted">{{ storage_stats.free_gb }} GB free of {{ storage_stats.total_gb }} GB</span>
             <div class="disk-bar">
-                <div class="disk-bar-fill" style="width: {{ storage_stats.used_pct }}%;"></div>
+                <div class="disk-bar-fill" style="--fill: {{ storage_stats.used_pct }}%"></div>
             </div>
         </div>
         {% endif %}

@@ -1099,6 +1099,7 @@ th {
 }
 
 .disk-bar-fill {
+    width: var(--fill, 0%);
     height: 100%;
     background: var(--accent);
     border-radius: 99px;
