@@ -8,14 +8,19 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
+
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return render_template('login.html')
 
         db = get_db()
         user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         db.close()
 
         if user and check_password_hash(user['password_hash'], password):
+            session.clear()
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']

@@ -19,10 +19,14 @@ def list_users():
 @admin_required
 def create_user():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
         role = request.form['role']
         permissions = ','.join(request.form.getlist('permissions')) or 'read'
+
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return render_template('users/create.html')
 
         db = get_db()
         existing = db.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()

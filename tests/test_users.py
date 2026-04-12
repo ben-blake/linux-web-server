@@ -110,6 +110,32 @@ def test_delete_user_nullifies_file_ownership(admin_client, app):
     assert row['uploaded_by'] is None
 
 
+def test_create_user_empty_username_rejected(admin_client):
+    resp = admin_client.post('/users/create', data={
+        'username': '',
+        'password': 'pass',
+        'role': 'user',
+        'permissions': 'read',
+    }, follow_redirects=True)
+    assert b'required' in resp.data
+
+
+def test_create_user_empty_password_rejected(admin_client):
+    resp = admin_client.post('/users/create', data={
+        'username': 'newuser',
+        'password': '',
+        'role': 'user',
+        'permissions': 'read',
+    }, follow_redirects=True)
+    assert b'required' in resp.data
+
+
+def test_edit_nonexistent_user_redirects(admin_client):
+    resp = admin_client.get('/users/9999/edit', follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'not found' in resp.data.lower()
+
+
 def test_duplicate_username_rejected(admin_client):
     admin_client.post('/users/create', data={
         'username': 'dupeuser',

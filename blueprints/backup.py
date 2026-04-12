@@ -86,7 +86,13 @@ def schedule():
     sched = _get_scheduler()
 
     if request.method == 'POST':
-        interval_hours = int(request.form.get('interval', 24))
+        try:
+            interval_hours = int(request.form.get('interval', 24))
+            if interval_hours < 1:
+                raise ValueError('Interval must be at least 1 hour.')
+        except (ValueError, TypeError):
+            flash('Invalid interval. Enter a whole number of hours (minimum 1).', 'error')
+            return redirect(url_for('backup.schedule'))
 
         if sched.get_job('nas_backup'):
             sched.remove_job('nas_backup')
@@ -129,6 +135,9 @@ def restore(backup_id):
         os.makedirs(config.NAS_STORAGE, exist_ok=True)
 
         with tarfile.open(archive_path, 'r:gz') as tar:
+            for member in tar.getmembers():
+                if os.path.isabs(member.name) or '..' in member.name:
+                    raise ValueError(f'Unsafe path in archive: {member.name}')
             tar.extractall(path=config.NAS_STORAGE)
 
         flash(f'Restored from backup "{backup["name"]}".', 'success')

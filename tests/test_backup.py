@@ -267,3 +267,56 @@ class TestBackupSchedule:
     def test_schedule_post_flash_success(self, admin_client):
         resp = admin_client.post('/backup/schedule', data={'interval': '12'}, follow_redirects=True)
         assert b'scheduled' in resp.data.lower()
+
+    def test_schedule_non_integer_interval_rejected(self, admin_client):
+        resp = admin_client.post('/backup/schedule', data={'interval': 'abc'}, follow_redirects=True)
+        assert resp.status_code == 200
+        assert b'Invalid interval' in resp.data
+
+    def test_schedule_zero_interval_rejected(self, admin_client):
+        resp = admin_client.post('/backup/schedule', data={'interval': '0'}, follow_redirects=True)
+        assert resp.status_code == 200
+        assert b'Invalid interval' in resp.data
+
+    def test_schedule_negative_interval_rejected(self, admin_client):
+        resp = admin_client.post('/backup/schedule', data={'interval': '-5'}, follow_redirects=True)
+        assert resp.status_code == 200
+        assert b'Invalid interval' in resp.data
+
+
+# ---------------------------------------------------------------------------
+# Restore security
+# ---------------------------------------------------------------------------
+
+class TestRestoreSecurity:
+    def test_restore_rejects_path_traversal_in_archive(self, admin_client, app):
+        """A tar archive containing path traversal entries is rejected during restore."""
+        import tempfile
+
+        malicious_tar = os.path.join(config.NAS_BACKUPS, 'malicious.tar.gz')
+        sentinel = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
+        sentinel.write(b'malicious content')
+        sentinel.close()
+
+        with tarfile.open(malicious_tar, 'w:gz') as tar:
+            tar.add(sentinel.name, arcname='../evil.txt')
+        os.unlink(sentinel.name)
+
+        with app.app_context():
+            from database import get_db
+            db = get_db()
+            db.execute(
+                'INSERT INTO backups (name, filepath, size, type, created_by) VALUES (?, ?, ?, ?, ?)',
+                ('malicious', malicious_tar, 100, 'manual', None),
+            )
+            db.commit()
+            backup_id = db.execute(
+                'SELECT id FROM backups ORDER BY id DESC LIMIT 1'
+            ).fetchone()['id']
+            db.close()
+
+        resp = admin_client.post(f'/backup/restore/{backup_id}', follow_redirects=True)
+        assert resp.status_code == 200
+        assert b'failed' in resp.data.lower()
+        evil_path = os.path.join(os.path.dirname(config.NAS_STORAGE), 'evil.txt')
+        assert not os.path.exists(evil_path)
