@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import shutil
 from datetime import datetime
@@ -9,15 +8,10 @@ from werkzeug.utils import secure_filename
 import config
 from database import get_db
 from utils.decorators import permission_required
-=======
-from flask import Blueprint, render_template
-from utils.decorators import login_required
->>>>>>> origin/main
 
 files_bp = Blueprint('files', __name__, url_prefix='/files')
 
 
-<<<<<<< HEAD
 def _storage_root():
     return os.path.realpath(os.path.abspath(config.NAS_STORAGE))
 
@@ -30,7 +24,7 @@ def _to_rel_display(abs_path):
     prefix = root + os.sep
     if not abs_path.startswith(prefix):
         return None
-    return abs_path[len(prefix) :].replace(os.sep, '/')
+    return abs_path[len(prefix):].replace(os.sep, '/')
 
 
 def safe_join(relative):
@@ -65,9 +59,7 @@ def _disk_stats_for_storage():
             'free_gb': round(usage.free / (1024**3), 2),
             'total_gb': round(total / (1024**3), 2),
             'used_gb': round(used / (1024**3), 2),
-            # Rounded % (bar + big label) barely moves when you add small files on a huge disk
             'used_pct': round(used_pct_precise, 1),
-            # Finer values so refreshes after uploads can show a change
             'used_pct_fine': round(used_pct_precise, 4),
             'used_frac_for_bar': round(used_pct_precise, 5),
             'used_mib_fmt': f"{used / (1024**2):,.2f}",
@@ -78,7 +70,7 @@ def _disk_stats_for_storage():
 
 
 def _nas_tree_usage(abs_root):
-    """Total file bytes and file count under NAS root (updates when you add/remove files)."""
+    """Total file bytes and file count under NAS root."""
     abs_root = os.path.realpath(abs_root)
     total_bytes = 0
     file_count = 0
@@ -94,7 +86,6 @@ def _nas_tree_usage(abs_root):
                     continue
     except OSError:
         return {'total_bytes': 0, 'file_count': 0, 'meter_pct': 0.0, 'meter_label': ''}
-    # Display-scale bar so the vault visibly grows with uploads (tiers up to 100 GB)
     tiers = [
         1 * 1024 * 1024,
         10 * 1024 * 1024,
@@ -174,7 +165,7 @@ def _update_db_paths_after_rename(db, old_abs, new_abs):
                 (new_abs, os.path.basename(new_abs), row['id']),
             )
         elif fp.startswith(old_prefix):
-            suffix = fp[len(old_prefix) :]
+            suffix = fp[len(old_prefix):]
             new_fp = os.path.join(new_abs, suffix)
             db.execute('UPDATE files SET filepath = ? WHERE id = ?', (new_fp, row['id']))
 
@@ -270,10 +261,15 @@ def upload():
     size = os.path.getsize(dest)
 
     db = get_db()
-    db.execute(
-        'INSERT INTO files (filename, filepath, size, uploaded_by) VALUES (?, ?, ?, ?)',
-        (name, dest, size, session['user_id']),
-    )
+    existing = db.execute('SELECT id FROM files WHERE filepath = ?', (dest,)).fetchone()
+    if existing:
+        db.execute('UPDATE files SET size = ?, uploaded_by = ? WHERE filepath = ?',
+                   (size, session['user_id'], dest))
+    else:
+        db.execute(
+            'INSERT INTO files (filename, filepath, size, uploaded_by) VALUES (?, ?, ?, ?)',
+            (name, dest, size, session['user_id']),
+        )
     db.commit()
     db.close()
 
@@ -305,7 +301,11 @@ def mkdir():
         flash('A file or folder with that name already exists.', 'error')
         return redirect(url_for('files.index', path=rel))
 
-    os.mkdir(new_dir)
+    try:
+        os.mkdir(new_dir)
+    except (FileExistsError, OSError) as e:
+        flash(f'Could not create folder: {e}', 'error')
+        return redirect(url_for('files.index', path=rel))
     flash(f'Created folder "{name}".', 'success')
     return redirect(url_for('files.index', path=rel))
 
@@ -383,9 +383,3 @@ def delete_item():
 
     flash('Deleted.', 'success')
     return redirect(url_for('files.index', path=parent_rel))
-=======
-@files_bp.route('/')
-@login_required
-def index():
-    return render_template('files/index.html')
->>>>>>> origin/main

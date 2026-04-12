@@ -2,7 +2,6 @@
 {% block title %}Users — NAS Server{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="page-header">
     <h1>User management</h1>
     <p>Create accounts and set roles and permissions for NAS access.</p>
@@ -12,12 +11,6 @@
 </div>
 <div class="table-wrap">
 <table>
-=======
-<h1>User Management</h1>
-<a href="{{ url_for('users.create_user') }}" class="btn btn-primary">Create User</a>
-
-<table style="margin-top: 20px;">
->>>>>>> origin/main
     <thead>
         <tr>
             <th>Username</th>
@@ -35,23 +28,14 @@
             <td>{{ user['permissions'] }}</td>
             <td>{{ user['created_at'] }}</td>
             <td>
-<<<<<<< HEAD
                 <a href="{{ url_for('users.edit_user', user_id=user['id']) }}" class="btn btn-sm btn-primary">Edit</a>
                 <form method="POST" action="{{ url_for('users.delete_user', user_id=user['id']) }}" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this user?')">Delete</button>
-=======
-                <a href="{{ url_for('users.edit_user', user_id=user['id']) }}" class="btn btn-primary">Edit</a>
-                <form method="POST" action="{{ url_for('users.delete_user', user_id=user['id']) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this user?')">Delete</button>
->>>>>>> origin/main
                 </form>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-<<<<<<< HEAD
 </div>
-=======
->>>>>>> origin/main
 {% endblock %}

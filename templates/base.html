@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
     <meta name="theme-color" content="#0c1222">
     <title>{% block title %}NAS Server{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-=======
-    <title>{% block title %}NAS Server{% endblock %}</title>
->>>>>>> origin/main
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     {% if session.get('user_id') %}
     <div class="layout">
-<<<<<<< HEAD
         <nav class="sidebar" aria-label="Main navigation">
             <div class="sidebar-top">
                 <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
@@ -80,32 +75,10 @@
                         Log out
                     </a>
                 </div>
-=======
-        <nav class="sidebar">
-            <h2>NAS Server</h2>
-            <ul>
-                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('files.index') }}">Files</a></li>
-                {% if session.get('role') == 'admin' %}
-                <li><a href="{{ url_for('users.list_users') }}">Users</a></li>
-                {% endif %}
-                <li><a href="{{ url_for('monitor.index') }}">Monitor</a></li>
-                {% if session.get('role') == 'admin' %}
-                <li><a href="{{ url_for('backup.index') }}">Backups</a></li>
-                {% endif %}
-                <li><a href="{{ url_for('users.profile') }}">My Profile</a></li>
-            </ul>
-        </nav>
-        <main class="content">
-            <header class="topbar">
-                <span>Logged in as <strong>{{ session.get('username') }}</strong> ({{ session.get('role') }})</span>
-                <a href="{{ url_for('auth.logout') }}">Logout</a>
->>>>>>> origin/main
             </header>
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-<<<<<<< HEAD
                     <div class="flash {{ category }} flash--dismissible" role="alert">
                         {{ message }}
                         <button type="button" class="flash-dismiss" aria-label="Dismiss">&times;</button>
@@ -125,17 +98,6 @@
     <div class="public-shell">
         {% block public_content %}{% endblock %}
     </div>
-=======
-                    <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-    {% else %}
-        {% block public_content %}{% endblock %}
->>>>>>> origin/main
     {% endif %}
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

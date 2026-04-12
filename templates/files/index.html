@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Files — NAS Server{% endblock %}
-<<<<<<< HEAD
 
 {% macro fmt_size(bytes) -%}
     {%- if bytes is none -%}—
@@ -29,7 +28,7 @@
                 <strong>{{ fmt_size(nas_usage.total_bytes) }}</strong> in <strong>{{ nas_usage.file_count }}</strong> file{% if nas_usage.file_count != 1 %}s{% endif %}
                 under storage (all folders)
             </p>
-            <p class="storage-meter-note">This total updates every time you refresh after uploading or deleting. It is not the same as “whole PC disk” usage below.</p>
+            <p class="storage-meter-note">This total updates every time you refresh after uploading or deleting. It is not the same as "whole PC disk" usage below.</p>
             <div class="storage-meter-wrap">
                 <div class="storage-meter-label">
                     <span>Vault bar ({{ nas_usage.meter_label }})</span>
@@ -217,9 +216,4 @@
     <strong>write</strong> — upload, delete, new folder;
     <strong>edit</strong> — rename files and folders.
 </p>
-=======
-{% block content %}
-<h1>File Management</h1>
-<p>This module is under development.</p>
->>>>>>> origin/main
 {% endblock %}

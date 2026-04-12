@@ -2,7 +2,6 @@
 {% block title %}Profile — NAS Server{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="page-header">
     <h1>My profile</h1>
     <p>Your account details and password.</p>
@@ -27,21 +26,4 @@
         <button type="submit">Update password</button>
     </form>
 </div>
-=======
-<h1>My Profile</h1>
-<p>Username: <strong>{{ session.get('username') }}</strong></p>
-<p>Role: <strong>{{ session.get('role') }}</strong></p>
-<p>Permissions: <strong>{{ session.get('permissions') }}</strong></p>
-
-<h2 style="margin-top: 30px;">Change Password</h2>
-<form method="POST" style="max-width: 500px;">
-    <label for="current_password">Current Password</label>
-    <input type="password" id="current_password" name="current_password" required>
-
-    <label for="new_password">New Password</label>
-    <input type="password" id="new_password" name="new_password" required>
-
-    <button type="submit">Update Password</button>
-</form>
->>>>>>> origin/main
 {% endblock %}

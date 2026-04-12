@@ -2,7 +2,6 @@
 {% block title %}Dashboard — NAS Server{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="page-header">
     <span class="eyebrow">Overview</span>
     <h1>Dashboard</h1>
@@ -48,33 +47,6 @@
         <h3>System</h3>
         <p class="card-number">Live</p>
         <a href="{{ url_for('monitor.index') }}">Open monitor</a>
-=======
-<h1>Dashboard</h1>
-<div class="card-grid">
-    <div class="card">
-        <h3>Users</h3>
-        <p class="card-number">{{ user_count }}</p>
-        {% if session.get('role') == 'admin' %}
-        <a href="{{ url_for('users.list_users') }}">Manage</a>
-        {% endif %}
-    </div>
-    <div class="card">
-        <h3>Files</h3>
-        <p class="card-number">{{ file_count }}</p>
-        <a href="{{ url_for('files.index') }}">Browse</a>
-    </div>
-    <div class="card">
-        <h3>Last Backup</h3>
-        <p class="card-number">{{ last_backup }}</p>
-        {% if session.get('role') == 'admin' %}
-        <a href="{{ url_for('backup.index') }}">Manage</a>
-        {% endif %}
-    </div>
-    <div class="card">
-        <h3>System</h3>
-        <p class="card-number">Live</p>
-        <a href="{{ url_for('monitor.index') }}">Monitor</a>
->>>>>>> origin/main
     </div>
 </div>
 {% endblock %}

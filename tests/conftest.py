@@ -1,29 +1,21 @@
 import os
-<<<<<<< HEAD
 import shutil
-=======
->>>>>>> origin/main
 import tempfile
 import pytest
 from app import create_app
-from database import get_db, init_db
 
 
 @pytest.fixture
 def app():
-    """Create a test app with a temporary database."""
+    """Create a test app with a temporary database and storage directory."""
     db_fd, db_path = tempfile.mkstemp()
-<<<<<<< HEAD
     storage_dir = tempfile.mkdtemp()
+    backups_dir = tempfile.mkdtemp()
 
     import config
     config.DATABASE = db_path
     config.NAS_STORAGE = storage_dir
-=======
-
-    import config
-    config.DATABASE = db_path
->>>>>>> origin/main
+    config.NAS_BACKUPS = backups_dir
 
     test_app = create_app()
     test_app.config['TESTING'] = True
@@ -32,10 +24,8 @@ def app():
 
     os.close(db_fd)
     os.unlink(db_path)
-<<<<<<< HEAD
     shutil.rmtree(storage_dir, ignore_errors=True)
-=======
->>>>>>> origin/main
+    shutil.rmtree(backups_dir, ignore_errors=True)
 
 
 @pytest.fixture
