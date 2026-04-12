@@ -8,7 +8,7 @@ Web-based interface for managing a Network Attached Storage (NAS) server.
 2. Create a virtual environment: `python3 -m venv .venv`
 3. Activate it: `source .venv/bin/activate`
 4. Install dependencies: `pip install -r requirements.txt`
-5. Run the server: `python3 app.py`
+5. Run the server: `NAS_STORAGE=./storage NAS_BACKUPS=./backups python3 app.py`
 6. Open `http://localhost:5000` — login with `admin` / `admin`
 
 ## Team Modules
