@@ -40,8 +40,8 @@
     \begin{beamercolorbox}[wd=.34\paperwidth,ht=2.5ex,dp=1ex,center]{footline}
       NAS Web Server
     \end{beamercolorbox}
-    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,right]{footline}
-      \insertframenumber{} / \inserttotalframenumber\hspace{1em}
+    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,center]{footline}
+      \insertframenumber{} / \inserttotalframenumber
     \end{beamercolorbox}
   }
 }
@@ -91,8 +91,8 @@
 % --------------------------------------------------------------------------
 \begin{frame}{What We Built}
   \begin{columns}[T, onlytextwidth]
-    \column{0.53\textwidth}
-      \textbf{A web-based interface to manage a NAS server} \\[0.8em]
+    \column{0.52\textwidth}
+      \textbf{Web-based interface to manage a NAS server} \\[0.8em]
       Four independent modules, one unified app:
       \begin{itemize}
         \item User management and access control
@@ -100,7 +100,7 @@
         \item Live system monitoring
         \item Backup scheduling and restore
       \end{itemize}
-    \column{0.43\textwidth}
+    \column{0.44\textwidth}
       \begin{block}{Tech Stack}
         \begin{itemize}
           \item Python / Flask
@@ -109,6 +109,9 @@
           \item ngrok (remote access)
         \end{itemize}
       \end{block}
+      \vspace{0.8em}
+      \textbf{Source code} \\
+      {\small \texttt{github.com/ben-blake/linux-web-server}}
   \end{columns}
 \end{frame}
 
