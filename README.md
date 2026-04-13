@@ -74,7 +74,7 @@ Web-based interface for managing a Network Attached Storage (NAS) server.
 | GET | `/files/download` | login | Download a file |
 | POST | `/files/upload` | write | Upload a file |
 | POST | `/files/mkdir` | write | Create a directory |
-| POST | `/files/rename` | write | Rename a file or directory |
+| POST | `/files/rename` | edit | Rename a file or directory |
 | POST | `/files/delete` | write | Delete a file or directory |
 | GET | `/monitor/` | login | System stats dashboard |
 | GET | `/monitor/logs` | login | View system logs |
