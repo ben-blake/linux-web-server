@@ -9,3 +9,4 @@ CLAUDE.md
 .pytest_cache/
 .vscode/
 .mypy_cache/
+.ruff_cache/
