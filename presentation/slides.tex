@@ -1,0 +1,318 @@
+\documentclass[aspectratio=169]{beamer}
+
+% --------------------------------------------------------------------------
+% Theme
+% --------------------------------------------------------------------------
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Custom navy/slate palette to match the app's UI
+\definecolor{navydark}{RGB}{12, 18, 34}
+\definecolor{navymid}{RGB}{22, 32, 58}
+\definecolor{accent}{RGB}{99, 179, 237}
+\definecolor{textmuted}{RGB}{148, 163, 184}
+
+\setbeamercolor{palette primary}{bg=navydark, fg=white}
+\setbeamercolor{palette secondary}{bg=navymid, fg=white}
+\setbeamercolor{palette tertiary}{bg=navydark, fg=white}
+\setbeamercolor{palette quaternary}{bg=navydark, fg=white}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{section in toc}{fg=navydark}
+\setbeamercolor{block title}{bg=navymid, fg=white}
+\setbeamercolor{block body}{bg=navydark!10}
+\setbeamercolor{frametitle}{bg=navydark, fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=textmuted}
+\setbeamercolor{author}{fg=accent}
+\setbeamercolor{date}{fg=textmuted}
+\setbeamercolor{institute}{fg=textmuted}
+\setbeamercolor{footline}{fg=white, bg=navydark}
+
+\setbeamertemplate{navigation symbols}{}
+% Madrid's headline bar has a hardcoded width off by 8.5pt in 16:9 — remove it
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{
+  \leavevmode
+  \hbox{
+    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,center]{footline}
+      CS 5531 --- Advanced Operating Systems
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[wd=.34\paperwidth,ht=2.5ex,dp=1ex,center]{footline}
+      NAS Web Server
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,right]{footline}
+      \insertframenumber{} / \inserttotalframenumber\hspace{1em}
+    \end{beamercolorbox}
+  }
+}
+
+% --------------------------------------------------------------------------
+% Packages
+% --------------------------------------------------------------------------
+\usepackage{fontenc}
+\usepackage{inputenc}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tikz}
+
+% Prevent overfull hbox warnings from Madrid theme's internal margins
+\emergencystretch=3em
+
+% --------------------------------------------------------------------------
+% Metadata
+% --------------------------------------------------------------------------
+\title{NAS Web Server Management Interface}
+\subtitle{CS 5531 Advanced Operating Systems}
+\author{
+  Ben Blake \and
+  Rasagyna Peddapalli \and
+  Bhavya Harshitha Chennu \and
+  Mukunda Chakravartula
+}
+\institute{University of Missouri -- Kansas City}
+\date{April 2026}
+
+% ==========================================================================
+\begin{document}
+% ==========================================================================
+
+% --------------------------------------------------------------------------
+% Title
+% --------------------------------------------------------------------------
+{
+\setbeamercolor{background canvas}{bg=navydark}
+\begin{frame}
+  \titlepage
+\end{frame}
+}
+
+% --------------------------------------------------------------------------
+% Project Overview
+% --------------------------------------------------------------------------
+\begin{frame}{What We Built}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.53\textwidth}
+      \textbf{A web-based interface to manage a NAS server} \\[0.8em]
+      Four independent modules, one unified app:
+      \begin{itemize}
+        \item User management and access control
+        \item File browsing, upload, and download
+        \item Live system monitoring
+        \item Backup scheduling and restore
+      \end{itemize}
+    \column{0.43\textwidth}
+      \begin{block}{Tech Stack}
+        \begin{itemize}
+          \item Python / Flask
+          \item SQLite
+          \item Ubuntu 24.04 VM (VirtualBox)
+          \item ngrok (remote access)
+        \end{itemize}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% --------------------------------------------------------------------------
+\begin{frame}{Key Design Decisions}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{Flask Blueprints} \\
+      Each module is an isolated blueprint. One person owns one blueprint --- no merge conflicts, clean boundaries. \\[1em]
+      \textbf{SQLite} \\
+      Single-file database. No separate server to deploy or configure. Fits the scale of a NAS appliance.
+    \column{0.46\textwidth}
+      \textbf{ngrok} \\
+      Zero network configuration. Instant HTTPS tunnel out of a NAT'd VM --- no port forwarding, no static IP. \\[1em]
+      \textbf{Roles + Permissions} \\
+      Role (\textit{admin}/\textit{user}) controls what sections you can reach. Permissions (\textit{read}/\textit{write}/\textit{edit}) control what you can do with files.
+  \end{columns}
+\end{frame}
+
+% --------------------------------------------------------------------------
+% User Management — Ben Blake
+% --------------------------------------------------------------------------
+\begin{frame}{User Management}
+  \textit{Ben Blake}
+  \vspace{0.5em}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{What it does}
+      \begin{itemize}
+        \item Login / logout with session-based auth
+        \item Create, edit, and delete user accounts
+        \item Assign roles and file permissions
+        \item Change password from profile page
+      \end{itemize}
+    \column{0.46\textwidth}
+      \textbf{Why we built it this way}
+      \begin{itemize}
+        \item Sessions over JWT --- simpler, no token storage in a browser context
+        \item Werkzeug \texttt{pbkdf2:sha256} hashing --- battle-tested, no extra dependencies
+        \item Role gates sensitive admin routes; permission gates individual file actions
+        \item Admins cannot delete their own account --- prevents accidental lockout
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[navydark] (current page.south west) rectangle (current page.north east);
+    \node[white, font=\Huge\bfseries] at (current page.center) {DEMO --- User Management};
+    \node[accent, font=\large] at ([yshift=-1.2cm]current page.center) {
+      Create user $\cdot$ Assign permissions $\cdot$ Edit role $\cdot$ Delete user $\cdot$ Change password
+    };
+  \end{tikzpicture}
+\end{frame}
+
+% --------------------------------------------------------------------------
+% File Management — Rasagyna Peddapalli
+% --------------------------------------------------------------------------
+\begin{frame}{File Management}
+  \textit{Rasagyna Peddapalli}
+  \vspace{0.5em}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{What it does}
+      \begin{itemize}
+        \item Browse the NAS storage directory tree
+        \item Upload files into any folder
+        \item Download individual files
+        \item Create, rename, and delete files and folders
+      \end{itemize}
+    \column{0.46\textwidth}
+      \textbf{Why we built it this way}
+      \begin{itemize}
+        \item All paths validated server-side --- path traversal attacks blocked before any filesystem call
+        \item \texttt{secure\_filename()} sanitizes every upload name
+        \item Database tracks uploads; pruned automatically when files are deleted outside the app
+        \item Write permission gates destructive actions; Edit permission is separate for rename
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[navydark] (current page.south west) rectangle (current page.north east);
+    \node[white, font=\Huge\bfseries] at (current page.center) {DEMO --- File Management};
+    \node[accent, font=\large] at ([yshift=-1.2cm]current page.center) {
+      Create folder $\cdot$ Upload $\cdot$ Download $\cdot$ Rename $\cdot$ Delete
+    };
+  \end{tikzpicture}
+\end{frame}
+
+% --------------------------------------------------------------------------
+% System Monitoring — Bhavya Harshitha Chennu
+% --------------------------------------------------------------------------
+\begin{frame}{System Monitoring}
+  \textit{Bhavya Harshitha Chennu}
+  \vspace{0.5em}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{What it does}
+      \begin{itemize}
+        \item Live CPU, memory, and disk usage stats
+        \item Visual progress bars for at-a-glance health
+        \item System log viewer (last 100 lines of \texttt{/var/log/syslog})
+        \item Values update every 10 seconds without a page reload
+      \end{itemize}
+    \column{0.46\textwidth}
+      \textbf{Why we built it this way}
+      \begin{itemize}
+        \item \texttt{psutil} --- cross-platform, one import, no system calls to parse manually
+        \item AJAX polling instead of \texttt{meta refresh} --- smoother UX, no full page flash
+        \item Logs are read-only and tail-limited --- no way to write or clear them from the UI
+        \item Falls back gracefully if the log file is not accessible
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[navydark] (current page.south west) rectangle (current page.north east);
+    \node[white, font=\Huge\bfseries] at (current page.center) {DEMO --- System Monitoring};
+    \node[accent, font=\large] at ([yshift=-1.2cm]current page.center) {
+      CPU / memory / disk stats $\cdot$ Live update $\cdot$ System logs
+    };
+  \end{tikzpicture}
+\end{frame}
+
+% --------------------------------------------------------------------------
+% Backup and Restore — Mukunda Chakravartula
+% --------------------------------------------------------------------------
+\begin{frame}{Backup \& Restore}
+  \textit{Mukunda Chakravartula}
+  \vspace{0.5em}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{What it does}
+      \begin{itemize}
+        \item One-click manual backup of all NAS storage
+        \item Configurable automatic backup schedule (hourly to daily)
+        \item Restore any previous backup --- replaces current storage
+        \item Schedule persists across server restarts
+      \end{itemize}
+    \column{0.46\textwidth}
+      \textbf{Why we built it this way}
+      \begin{itemize}
+        \item \texttt{.tar.gz} format --- standard, portable, no proprietary format lock-in
+        \item APScheduler runs inside Flask --- no external cron service to configure on the VM
+        \item Schedule saved to the database --- survives restarts without reconfiguration
+        \item Restore clears contents, not the directory --- avoids permission issues on \texttt{/srv}
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[navydark] (current page.south west) rectangle (current page.north east);
+    \node[white, font=\Huge\bfseries] at (current page.center) {DEMO --- Backup \& Restore};
+    \node[accent, font=\large] at ([yshift=-1.2cm]current page.center) {
+      Manual backup $\cdot$ Schedule $\cdot$ Restore $\cdot$ Delete backup
+    };
+  \end{tikzpicture}
+\end{frame}
+
+% --------------------------------------------------------------------------
+% Conclusion
+% --------------------------------------------------------------------------
+\begin{frame}{Summary}
+  \begin{columns}[T, onlytextwidth]
+    \column{0.46\textwidth}
+      \textbf{What we delivered}
+      \begin{itemize}
+        \item Fully functional NAS management interface
+        \item Four independent modules integrated into one app
+        \item Role-based access control throughout
+        \item 142 automated tests, 100\% passing
+        \item Deployed on Ubuntu VM, accessible via ngrok
+      \end{itemize}
+    \column{0.46\textwidth}
+      \textbf{Challenges}
+      \begin{itemize}
+        \item Path security --- every file operation validates against the storage root
+        \item Backup restore on \texttt{/srv} --- Linux directory ownership requires clearing contents, not deleting the directory
+        \item In-memory scheduler --- solved by persisting the schedule to SQLite
+        \item Coordinating four independent modules without breaking each other's code
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+{
+\setbeamercolor{background canvas}{bg=navydark}
+\begin{frame}[plain]
+  \begin{center}
+    \vspace{2em}
+    {\Huge \textcolor{white}{\textbf{Questions?}}} \\[1.5em]
+    {\large \textcolor{accent}{CS 5531 Advanced Operating Systems}} \\[0.5em]
+    {\normalsize \textcolor{textmuted}{University of Missouri -- Kansas City}} \\[1.5em]
+    \textcolor{textmuted}{\small
+      Ben Blake $\cdot$
+      Rasagyna Peddapalli $\cdot$
+      Bhavya Harshitha Chennu $\cdot$
+      Mukunda Chakravartula
+    }
+  \end{center}
+\end{frame}
+}
+
+\end{document}
