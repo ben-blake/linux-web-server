@@ -1,0 +1,82 @@
+[project]
+name = "linux-web-server"
+version = "0.1.0"
+requires-python = ">=3.9"
+
+# ---------------------------------------------------------------------------
+# Ruff — linting + formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long — ruff format handles this
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# ---------------------------------------------------------------------------
+# Mypy — type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
+exclude = ["^.venv/"]
+
+# Flask decorator patterns and view functions use complex return types;
+# relax untyped-decorator errors for application modules.
+[[tool.mypy.overrides]]
+module = ["blueprints.*", "utils.*", "app", "database", "config"]
+disallow_untyped_decorators = false
+
+# Test files conventionally omit type annotations — relax strict checks.
+[[tool.mypy.overrides]]
+module = ["tests.*", "conftest"]
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+disallow_incomplete_defs = false
+
+# ---------------------------------------------------------------------------
+# Bandit — security scanning
+# ---------------------------------------------------------------------------
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+severity = "medium"
+confidence = "medium"
+skips = [
+    "B104",  # binding to 0.0.0.0 — intentional for the NAS server
+]
+
+# ---------------------------------------------------------------------------
+# Vulture — dead code detection
+# ---------------------------------------------------------------------------
+[tool.vulture]
+min_confidence = 80
+exclude = [".venv"]
+
+# ---------------------------------------------------------------------------
+# Coverage — test coverage reporting (pytest-cov)
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["."]
+omit = [".venv/*", "tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "if __name__ == .__main__.:",
+]

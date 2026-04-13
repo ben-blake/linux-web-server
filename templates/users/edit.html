@@ -2,7 +2,6 @@
 {% block title %}Edit User — NAS Server{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="page-header">
     <h1>Edit user</h1>
     <p>Updating <strong>{{ user['username'] }}</strong></p>
@@ -11,16 +10,20 @@
     <form method="POST">
         <label for="role">Role</label>
         <select id="role" name="role">
-            <option value="user" {% if user['role'] == 'user' %}selected{% endif %}>User</option>
-            <option value="admin" {% if user['role'] == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="user" {% if user['role']=='user' %}selected{% endif %}>User</option>
+            <option value="admin" {% if user['role']=='admin' %}selected{% endif %}>Admin</option>
         </select>
 
         <label>Permissions</label>
         <div class="checkbox-list">
-            <label><input type="checkbox" name="permissions" value="read" {% if 'read' in user['permissions'] %}checked{% endif %}> Read</label>
-            <label><input type="checkbox" name="permissions" value="write" {% if 'write' in user['permissions'] %}checked{% endif %}> Write</label>
-            <label><input type="checkbox" name="permissions" value="edit" {% if 'edit' in user['permissions'] %}checked{% endif %}> Edit</label>
-            <label><input type="checkbox" name="permissions" value="admin" {% if 'admin' in user['permissions'] %}checked{% endif %}> Admin</label>
+            <label><input type="checkbox" name="permissions" value="read" {% if 'read' in user['permissions']
+                    %}checked{% endif %}> Read</label>
+            <label><input type="checkbox" name="permissions" value="write" {% if 'write' in user['permissions']
+                    %}checked{% endif %}> Write</label>
+            <label><input type="checkbox" name="permissions" value="edit" {% if 'edit' in user['permissions']
+                    %}checked{% endif %}> Edit</label>
+            <label><input type="checkbox" name="permissions" value="admin" {% if 'admin' in user['permissions']
+                    %}checked{% endif %}> Admin</label>
         </div>
 
         <button type="submit">Save changes</button>
@@ -29,25 +32,4 @@
         <a href="{{ url_for('users.list_users') }}">Back to user list</a>
     </div>
 </div>
-=======
-<h1>Edit User: {{ user['username'] }}</h1>
-<form method="POST" style="max-width: 500px;">
-    <label for="role">Role</label>
-    <select id="role" name="role">
-        <option value="user" {% if user['role'] == 'user' %}selected{% endif %}>User</option>
-        <option value="admin" {% if user['role'] == 'admin' %}selected{% endif %}>Admin</option>
-    </select>
-
-    <label>Permissions</label>
-    <div style="margin-top: 5px;">
-        <label><input type="checkbox" name="permissions" value="read" {% if 'read' in user['permissions'] %}checked{% endif %}> Read</label><br>
-        <label><input type="checkbox" name="permissions" value="write" {% if 'write' in user['permissions'] %}checked{% endif %}> Write</label><br>
-        <label><input type="checkbox" name="permissions" value="edit" {% if 'edit' in user['permissions'] %}checked{% endif %}> Edit</label><br>
-        <label><input type="checkbox" name="permissions" value="admin" {% if 'admin' in user['permissions'] %}checked{% endif %}> Admin</label>
-    </div>
-
-    <button type="submit">Save Changes</button>
-</form>
-<a href="{{ url_for('users.list_users') }}">Back to Users</a>
->>>>>>> origin/main
 {% endblock %}
