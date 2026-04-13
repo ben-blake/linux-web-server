@@ -1,0 +1,16 @@
+Q1 Storage Report
+=================
+Period: January - March 2026
+
+Total files stored: 1,204
+Total storage used: 48.3 GB
+New uploads this quarter: 312
+Deleted files this quarter: 47
+
+Top directories by size:
+  media/       31.2 GB
+  documents/   10.7 GB
+  configs/      6.4 GB
+
+No quota violations detected.
+Backup schedule: hourly, all jobs completed successfully.
