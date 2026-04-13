@@ -5,10 +5,8 @@
 <div class="page-header">
     <span class="eyebrow">System</span>
     <h1>System Monitor</h1>
-    <p>Live CPU, memory, and disk stats for this host. Page refreshes every 10 seconds.</p>
+    <p>Live CPU, memory, and disk stats for this host. Values update every 10 seconds.</p>
 </div>
-
-<meta http-equiv="refresh" content="10">
 
 <div class="card-grid">
     <div class="card">
@@ -19,10 +17,10 @@
             </svg>
         </span>
         <h3>CPU</h3>
-        <p class="card-number">{{ cpu_percent }}%</p>
+        <p class="card-number" id="cpu-value">{{ cpu_percent }}%</p>
         <div class="disk-bar-wrap" style="margin-top: 0.5rem;">
             <div class="disk-bar">
-                <div class="disk-bar-fill" style="--fill: {{ cpu_percent }}%"></div>
+                <div class="disk-bar-fill" id="cpu-bar" style="--fill: {{ cpu_percent }}%"></div>
             </div>
         </div>
     </div>
@@ -35,11 +33,11 @@
             </svg>
         </span>
         <h3>Memory</h3>
-        <p class="card-number">{{ memory.percent }}%</p>
-        <span class="mono-muted">{{ memory.used_gb }} GB / {{ memory.total_gb }} GB</span>
+        <p class="card-number" id="mem-value">{{ memory.percent }}%</p>
+        <span class="mono-muted" id="mem-detail">{{ memory.used_gb }} GB / {{ memory.total_gb }} GB</span>
         <div class="disk-bar-wrap" style="margin-top: 0.5rem;">
             <div class="disk-bar">
-                <div class="disk-bar-fill" style="--fill: {{ memory.percent }}%"></div>
+                <div class="disk-bar-fill" id="mem-bar" style="--fill: {{ memory.percent }}%"></div>
             </div>
         </div>
     </div>
@@ -53,11 +51,11 @@
             </svg>
         </span>
         <h3>Disk (/)</h3>
-        <p class="card-number">{{ disk.percent }}%</p>
-        <span class="mono-muted">{{ disk.used_gb }} GB / {{ disk.total_gb }} GB</span>
+        <p class="card-number" id="disk-value">{{ disk.percent }}%</p>
+        <span class="mono-muted" id="disk-detail">{{ disk.used_gb }} GB / {{ disk.total_gb }} GB</span>
         <div class="disk-bar-wrap" style="margin-top: 0.5rem;">
             <div class="disk-bar">
-                <div class="disk-bar-fill" style="--fill: {{ disk.percent }}%"></div>
+                <div class="disk-bar-fill" id="disk-bar" style="--fill: {{ disk.percent }}%"></div>
             </div>
         </div>
     </div>
@@ -66,4 +64,28 @@
 <div style="margin-top: 1.5rem;">
     <a href="{{ url_for('monitor.logs') }}" class="btn btn-primary">View System Logs</a>
 </div>
+
+<script>
+    function updateStats() {
+        fetch("{{ url_for('monitor.stats') }}")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById("cpu-value").textContent = data.cpu_percent + "%";
+                document.getElementById("cpu-bar").style.setProperty("--fill", data.cpu_percent + "%");
+
+                document.getElementById("mem-value").textContent = data.memory.percent + "%";
+                document.getElementById("mem-detail").textContent =
+                    data.memory.used_gb + " GB / " + data.memory.total_gb + " GB";
+                document.getElementById("mem-bar").style.setProperty("--fill", data.memory.percent + "%");
+
+                document.getElementById("disk-value").textContent = data.disk.percent + "%";
+                document.getElementById("disk-detail").textContent =
+                    data.disk.used_gb + " GB / " + data.disk.total_gb + " GB";
+                document.getElementById("disk-bar").style.setProperty("--fill", data.disk.percent + "%");
+            })
+            .catch(function() {});
+    }
+
+    setInterval(updateStats, 10000);
+</script>
 {% endblock %}

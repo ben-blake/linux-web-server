@@ -31,7 +31,7 @@ def init_db() -> None:
                 "admin",
                 generate_password_hash("admin", method="pbkdf2:sha256"),
                 "admin",
-                "read,write,edit,admin",
+                "read,write,edit",
             ),
         )
         db.commit()

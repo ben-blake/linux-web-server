@@ -17,6 +17,29 @@ backup_bp = Blueprint("backup", __name__, url_prefix="/backup")
 _scheduler = None
 
 
+def restore_schedule_from_db() -> None:
+    """Re-register the backup job from the database after a server restart."""
+    db = get_db()
+    try:
+        row = db.execute(
+            "SELECT value FROM settings WHERE key = 'backup_interval_hours'"
+        ).fetchone()
+    finally:
+        db.close()
+
+    if row:
+        interval_hours = int(row["value"])
+        sched = _get_scheduler()
+        if not sched.get_job("nas_backup"):
+            sched.add_job(
+                perform_backup,
+                "interval",
+                hours=interval_hours,
+                id="nas_backup",
+                kwargs={"backup_type": "scheduled", "user_id": None},
+            )
+
+
 def _get_scheduler() -> Any:
     """Lazy-init the APScheduler background scheduler."""
     global _scheduler
@@ -118,6 +141,16 @@ def schedule() -> ResponseReturnValue:
             kwargs={"backup_type": "scheduled", "user_id": session[SESSION_USER_ID]},
         )
 
+        db = get_db()
+        try:
+            db.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('backup_interval_hours', ?)",
+                (str(interval_hours),),
+            )
+            db.commit()
+        finally:
+            db.close()
+
         flash(f"Automatic backup scheduled every {interval_hours} hour(s).", "success")
         return redirect(url_for("backup.index"))
 
@@ -150,14 +183,26 @@ def restore(backup_id: int) -> ResponseReturnValue:
         if not tarfile.is_tarfile(archive_path):
             raise ValueError("Backup archive is not a valid tar file.")
 
+        # Clear contents without deleting the directory itself.
+        # Deleting /srv/nas requires write permission on /srv (owned by root),
+        # but clearing its contents only needs permission on /srv/nas itself.
         if os.path.exists(config.NAS_STORAGE):
-            shutil.rmtree(config.NAS_STORAGE)
-        os.makedirs(config.NAS_STORAGE, exist_ok=True)
+            for item in os.listdir(config.NAS_STORAGE):
+                item_path = os.path.join(config.NAS_STORAGE, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+        else:
+            os.makedirs(config.NAS_STORAGE, exist_ok=True)
 
         storage_root = os.path.normpath(config.NAS_STORAGE)
         with tarfile.open(archive_path, "r:gz") as tar:
             safe_members = []
             for member in tar.getmembers():
+                # Skip the archive root entry to avoid touching /srv/nas itself
+                if os.path.normpath(member.name) in (".", ""):
+                    continue
                 dest = os.path.normpath(os.path.join(storage_root, member.name))
                 if not dest.startswith(storage_root + os.sep) and dest != storage_root:
                     raise ValueError(f"Unsafe path in archive: {member.name}")

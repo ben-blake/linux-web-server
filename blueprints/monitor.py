@@ -1,7 +1,7 @@
 from typing import Optional
 
 import psutil
-from flask import Blueprint, render_template
+from flask import Blueprint, jsonify, render_template
 from flask.typing import ResponseReturnValue
 
 from utils.decorators import login_required
@@ -52,6 +52,13 @@ def index() -> ResponseReturnValue:
     """System monitoring dashboard — CPU, memory, and disk."""
     stats = _collect_stats()
     return render_template("monitor/index.html", **stats)
+
+
+@monitor_bp.route("/stats")
+@login_required
+def stats() -> ResponseReturnValue:
+    """JSON endpoint for live stat polling — consumed by the monitor page."""
+    return jsonify(_collect_stats())
 
 
 def _read_logs() -> tuple[list[str], Optional[str]]:

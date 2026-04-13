@@ -90,6 +90,10 @@ def edit_user(user_id: int) -> ResponseReturnValue:
 @users_bp.route("/<int:user_id>/delete", methods=["POST"])
 @admin_required
 def delete_user(user_id: int) -> ResponseReturnValue:
+    if user_id == session.get(SESSION_USER_ID):
+        flash("You cannot delete your own account.", "error")
+        return redirect(url_for("users.list_users"))
+
     db = get_db()
     try:
         # Orphan user's files and backups rather than deleting, to preserve data

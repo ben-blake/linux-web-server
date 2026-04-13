@@ -22,8 +22,6 @@
                     %}checked{% endif %}> Write</label>
             <label><input type="checkbox" name="permissions" value="edit" {% if 'edit' in user['permissions']
                     %}checked{% endif %}> Edit</label>
-            <label><input type="checkbox" name="permissions" value="admin" {% if 'admin' in user['permissions']
-                    %}checked{% endif %}> Admin</label>
         </div>
 
         <button type="submit">Save changes</button>

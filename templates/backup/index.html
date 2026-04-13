@@ -49,7 +49,15 @@
                 <td>
                     <span class="type-pill type-pill--{{ backup['type'] }}">{{ backup['type'] }}</span>
                 </td>
-                <td class="mono-muted">{{ (backup['size'] / 1048576) | round(1) }} MB</td>
+                <td class="mono-muted">
+                    {%- if backup['size'] < 1024 -%}
+                        {{ backup['size'] }} B
+                    {%- elif backup['size'] < 1048576 -%}
+                        {{ (backup['size'] / 1024) | round(1) }} KB
+                    {%- else -%}
+                        {{ (backup['size'] / 1048576) | round(1) }} MB
+                    {%- endif -%}
+                </td>
                 <td class="mono-muted">{{ backup['created_at'] }}</td>
                 <td class="file-actions-cell">
                     <div class="file-actions">
