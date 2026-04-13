@@ -1,4 +1,4 @@
-.PHONY: lint fix test dead-code
+.PHONY: lint fix test coverage dead-code
 
 # Run the full quality gate in order: fast linting → formatting check → types → security → dead code
 lint:
@@ -20,3 +20,7 @@ fix:
 # Full test suite
 test:
 	.venv/bin/python3 -m pytest tests/ -v
+
+# Test suite with coverage report (requires pytest-cov)
+coverage:
+	.venv/bin/python3 -m pytest tests/ --cov --cov-report=term-missing --ignore=.venv

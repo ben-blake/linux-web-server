@@ -66,3 +66,17 @@ skips = [
 [tool.vulture]
 min_confidence = 80
 exclude = [".venv"]
+
+# ---------------------------------------------------------------------------
+# Coverage — test coverage reporting (pytest-cov)
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["."]
+omit = [".venv/*", "tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "if __name__ == .__main__.:",
+]

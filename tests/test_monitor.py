@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+from blueprints.monitor import _bytes_to_gb, _collect_stats, _read_logs
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -134,3 +136,72 @@ class TestMonitorLogs:
     def test_back_to_monitor_link_present(self, admin_client):
         resp = admin_client.get("/monitor/logs")
         assert b"/monitor/" in resp.data
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for internal helpers
+# ---------------------------------------------------------------------------
+
+
+class TestBytesToGb:
+    def test_zero(self):
+        assert _bytes_to_gb(0) == 0.0
+
+    def test_one_gb(self):
+        assert _bytes_to_gb(1024**3) == 1.0
+
+    def test_fractional(self):
+        assert _bytes_to_gb(int(1.5 * 1024**3)) == 1.5
+
+
+class TestCollectStats:
+    def test_returns_expected_keys(self):
+        stats = _collect_stats()
+        assert "cpu_percent" in stats
+        assert "memory" in stats
+        assert "disk" in stats
+
+    def test_memory_has_expected_keys(self):
+        stats = _collect_stats()
+        memory = stats["memory"]
+        assert isinstance(memory, dict)
+        assert set(memory) == {"total_gb", "used_gb", "percent"}
+
+    def test_disk_has_expected_keys(self):
+        stats = _collect_stats()
+        disk = stats["disk"]
+        assert isinstance(disk, dict)
+        assert set(disk) == {"total_gb", "used_gb", "percent"}
+
+    def test_values_are_numeric(self):
+        stats = _collect_stats()
+        memory = stats["memory"]
+        disk = stats["disk"]
+        assert isinstance(memory, dict)
+        assert isinstance(disk, dict)
+        assert isinstance(stats["cpu_percent"], float)
+        assert isinstance(memory["total_gb"], float)
+        assert isinstance(disk["percent"], float)
+
+
+class TestReadLogs:
+    def test_fallback_when_all_paths_inaccessible(self):
+        """When every log path raises FileNotFoundError, the fallback is returned."""
+        with patch("blueprints.monitor._LOG_PATHS", []):
+            lines, source = _read_logs()
+        assert source is None
+        assert any("No log file" in line for line in lines)
+
+    def test_returns_lines_and_path_when_readable(self, tmp_path):
+        log_file = tmp_path / "test.log"
+        log_file.write_text("line one\nline two\n")
+        with patch("blueprints.monitor._LOG_PATHS", [str(log_file)]):
+            lines, source = _read_logs()
+        assert source == str(log_file)
+        assert any("line one" in ln for ln in lines)
+
+    def test_skips_permission_error_and_falls_back(self):
+        """PermissionError on a path is skipped; fallback fires when no more paths."""
+        with patch("blueprints.monitor._LOG_PATHS", ["/no/such/path"]):
+            _, source = _read_logs()
+        assert source is None
