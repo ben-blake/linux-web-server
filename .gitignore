@@ -10,3 +10,4 @@ CLAUDE.md
 .vscode/
 .mypy_cache/
 .ruff_cache/
+.coverage
