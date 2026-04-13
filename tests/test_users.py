@@ -76,6 +76,24 @@ def test_user_can_change_own_password(user_client):
     assert b'updated' in resp.data.lower()
 
 
+def test_profile_empty_new_password_rejected(user_client):
+    resp = user_client.post('/users/profile', data={
+        'current_password': 'testpass',
+        'new_password': ''
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'required' in resp.data.lower()
+
+
+def test_profile_whitespace_new_password_rejected(user_client):
+    resp = user_client.post('/users/profile', data={
+        'current_password': 'testpass',
+        'new_password': '   '
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'required' in resp.data.lower()
+
+
 def test_delete_user_nullifies_file_ownership(admin_client, app):
     """Deleting a user sets uploaded_by to NULL on their files rather than leaving a dangling FK."""
     admin_client.post('/users/create', data={
@@ -124,6 +142,16 @@ def test_create_user_empty_password_rejected(admin_client):
     resp = admin_client.post('/users/create', data={
         'username': 'newuser',
         'password': '',
+        'role': 'user',
+        'permissions': 'read',
+    }, follow_redirects=True)
+    assert b'required' in resp.data
+
+
+def test_create_user_whitespace_password_rejected(admin_client):
+    resp = admin_client.post('/users/create', data={
+        'username': 'newuser',
+        'password': '   ',
         'role': 'user',
         'permissions': 'read',
     }, follow_redirects=True)

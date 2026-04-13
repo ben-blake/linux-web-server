@@ -6,6 +6,7 @@ from flask import Blueprint, flash, redirect, render_template, request, send_fil
 from werkzeug.utils import secure_filename
 
 import config
+from blueprints.auth import SESSION_PERMISSIONS, SESSION_USER_ID
 from database import get_db
 from utils.decorators import permission_required
 
@@ -155,7 +156,7 @@ def index():
             acc.append(part)
             breadcrumbs.append({'name': part, 'path': '/'.join(acc)})
 
-    perms = session.get('permissions', '').split(',')
+    perms = session.get(SESSION_PERMISSIONS, '').split(',')
     can_write = 'write' in perms
     can_edit = 'edit' in perms
 
@@ -221,11 +222,11 @@ def upload():
     existing = db.execute('SELECT id FROM files WHERE filepath = ?', (dest,)).fetchone()
     if existing:
         db.execute('UPDATE files SET size = ?, uploaded_by = ? WHERE filepath = ?',
-                   (size, session['user_id'], dest))
+                   (size, session[SESSION_USER_ID], dest))
     else:
         db.execute(
             'INSERT INTO files (filename, filepath, size, uploaded_by) VALUES (?, ?, ?, ?)',
-            (name, dest, size, session['user_id']),
+            (name, dest, size, session[SESSION_USER_ID]),
         )
     db.commit()
     db.close()

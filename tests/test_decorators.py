@@ -1,4 +1,5 @@
 from flask import Flask, session, Blueprint
+from blueprints.auth import SESSION_PERMISSIONS, SESSION_ROLE, SESSION_USER_ID
 
 
 def make_app():
@@ -47,9 +48,9 @@ def test_login_required_allows_logged_in_user():
     app = make_app()
     with app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['user_id'] = 1
-            sess['role'] = 'user'
-            sess['permissions'] = 'read'
+            sess[SESSION_USER_ID] = 1
+            sess[SESSION_ROLE] = 'user'
+            sess[SESSION_PERMISSIONS] = 'read'
         resp = client.get('/protected')
         assert resp.status_code == 200
 
@@ -58,9 +59,9 @@ def test_admin_required_blocks_regular_user():
     app = make_app()
     with app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['user_id'] = 1
-            sess['role'] = 'user'
-            sess['permissions'] = 'read'
+            sess[SESSION_USER_ID] = 1
+            sess[SESSION_ROLE] = 'user'
+            sess[SESSION_PERMISSIONS] = 'read'
         resp = client.get('/admin-only')
         assert resp.status_code == 403
 
@@ -69,9 +70,9 @@ def test_admin_required_allows_admin():
     app = make_app()
     with app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['user_id'] = 1
-            sess['role'] = 'admin'
-            sess['permissions'] = 'read,write,edit,admin'
+            sess[SESSION_USER_ID] = 1
+            sess[SESSION_ROLE] = 'admin'
+            sess[SESSION_PERMISSIONS] = 'read,write,edit,admin'
         resp = client.get('/admin-only')
         assert resp.status_code == 200
 
@@ -80,9 +81,9 @@ def test_permission_required_blocks_without_permission():
     app = make_app()
     with app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['user_id'] = 1
-            sess['role'] = 'user'
-            sess['permissions'] = 'read'
+            sess[SESSION_USER_ID] = 1
+            sess[SESSION_ROLE] = 'user'
+            sess[SESSION_PERMISSIONS] = 'read'
         resp = client.get('/needs-write')
         assert resp.status_code == 403
 
@@ -91,8 +92,8 @@ def test_permission_required_allows_with_permission():
     app = make_app()
     with app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['user_id'] = 1
-            sess['role'] = 'user'
-            sess['permissions'] = 'read,write'
+            sess[SESSION_USER_ID] = 1
+            sess[SESSION_ROLE] = 'user'
+            sess[SESSION_PERMISSIONS] = 'read,write'
         resp = client.get('/needs-write')
         assert resp.status_code == 200

@@ -2,10 +2,12 @@ import os
 import shutil
 import tarfile
 from datetime import datetime
+from typing import Optional
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from database import get_db
 from utils.decorators import admin_required
+from blueprints.auth import SESSION_USER_ID
 import config
 
 backup_bp = Blueprint('backup', __name__, url_prefix='/backup')
@@ -23,7 +25,7 @@ def _get_scheduler():
     return _scheduler
 
 
-def perform_backup(backup_type='manual', user_id=None):
+def perform_backup(backup_type: str = 'manual', user_id: Optional[int] = None) -> str:
     """Create a .tar.gz backup of NAS_STORAGE and record it in the database.
 
     Safe to call outside a request context (e.g. from the scheduler).
@@ -40,12 +42,14 @@ def perform_backup(backup_type='manual', user_id=None):
     size = os.path.getsize(archive_path)
 
     db = get_db()
-    db.execute(
-        'INSERT INTO backups (name, filepath, size, type, created_by) VALUES (?, ?, ?, ?, ?)',
-        (backup_name, archive_path, size, backup_type, user_id),
-    )
-    db.commit()
-    db.close()
+    try:
+        db.execute(
+            'INSERT INTO backups (name, filepath, size, type, created_by) VALUES (?, ?, ?, ?, ?)',
+            (backup_name, archive_path, size, backup_type, user_id),
+        )
+        db.commit()
+    finally:
+        db.close()
 
     return backup_name
 
@@ -55,8 +59,10 @@ def perform_backup(backup_type='manual', user_id=None):
 def index():
     """List all backups and show current schedule."""
     db = get_db()
-    backups = db.execute('SELECT * FROM backups ORDER BY created_at DESC').fetchall()
-    db.close()
+    try:
+        backups = db.execute('SELECT * FROM backups ORDER BY created_at DESC').fetchall()
+    finally:
+        db.close()
 
     sched = _get_scheduler()
     scheduled_job = sched.get_job('nas_backup')
@@ -71,9 +77,9 @@ def index():
 def create():
     """Trigger an immediate manual backup."""
     try:
-        name = perform_backup(backup_type='manual', user_id=session['user_id'])
+        name = perform_backup(backup_type='manual', user_id=session[SESSION_USER_ID])
         flash(f'Backup "{name}" created successfully.', 'success')
-    except Exception as e:
+    except (OSError, IOError) as e:
         flash(f'Backup failed: {e}', 'error')
 
     return redirect(url_for('backup.index'))
@@ -102,7 +108,7 @@ def schedule():
             'interval',
             hours=interval_hours,
             id='nas_backup',
-            kwargs={'backup_type': 'scheduled', 'user_id': session['user_id']},
+            kwargs={'backup_type': 'scheduled', 'user_id': session[SESSION_USER_ID]},
         )
 
         flash(f'Automatic backup scheduled every {interval_hours} hour(s).', 'success')
@@ -117,8 +123,10 @@ def schedule():
 def restore(backup_id):
     """Restore NAS storage from a backup archive."""
     db = get_db()
-    backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
-    db.close()
+    try:
+        backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
+    finally:
+        db.close()
 
     if not backup:
         flash('Backup not found.', 'error')
@@ -130,18 +138,25 @@ def restore(backup_id):
         return redirect(url_for('backup.index'))
 
     try:
+        if not tarfile.is_tarfile(archive_path):
+            raise ValueError('Backup archive is not a valid tar file.')
+
         if os.path.exists(config.NAS_STORAGE):
             shutil.rmtree(config.NAS_STORAGE)
         os.makedirs(config.NAS_STORAGE, exist_ok=True)
 
+        storage_root = os.path.normpath(config.NAS_STORAGE)
         with tarfile.open(archive_path, 'r:gz') as tar:
+            safe_members = []
             for member in tar.getmembers():
-                if os.path.isabs(member.name) or '..' in member.name:
+                dest = os.path.normpath(os.path.join(storage_root, member.name))
+                if not dest.startswith(storage_root + os.sep) and dest != storage_root:
                     raise ValueError(f'Unsafe path in archive: {member.name}')
-            tar.extractall(path=config.NAS_STORAGE)
+                safe_members.append(member)
+            tar.extractall(path=config.NAS_STORAGE, members=safe_members)
 
         flash(f'Restored from backup "{backup["name"]}".', 'success')
-    except Exception as e:
+    except (OSError, IOError, tarfile.TarError, ValueError) as e:
         flash(f'Restore failed: {e}', 'error')
 
     return redirect(url_for('backup.index'))
@@ -152,14 +167,19 @@ def restore(backup_id):
 def delete(backup_id):
     """Delete a backup record and its archive file."""
     db = get_db()
-    backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
+    try:
+        backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
 
-    if backup and os.path.exists(backup['filepath']):
-        os.remove(backup['filepath'])
+        if backup:
+            filepath = os.path.abspath(backup['filepath'])
+            backup_dir = os.path.abspath(config.NAS_BACKUPS)
+            if filepath.startswith(backup_dir + os.sep) and os.path.exists(filepath):
+                os.remove(filepath)
 
-    db.execute('DELETE FROM backups WHERE id = ?', (backup_id,))
-    db.commit()
-    db.close()
+        db.execute('DELETE FROM backups WHERE id = ?', (backup_id,))
+        db.commit()
+    finally:
+        db.close()
 
     flash('Backup deleted.', 'success')
     return redirect(url_for('backup.index'))
