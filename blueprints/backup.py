@@ -2,49 +2,52 @@ import os
 import shutil
 import tarfile
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask.typing import ResponseReturnValue
+
+import config
+from blueprints.auth import SESSION_USER_ID
 from database import get_db
 from utils.decorators import admin_required
-from blueprints.auth import SESSION_USER_ID
-import config
 
-backup_bp = Blueprint('backup', __name__, url_prefix='/backup')
+backup_bp = Blueprint("backup", __name__, url_prefix="/backup")
 
 _scheduler = None
 
 
-def _get_scheduler():
+def _get_scheduler() -> Any:
     """Lazy-init the APScheduler background scheduler."""
     global _scheduler
     if _scheduler is None:
         from apscheduler.schedulers.background import BackgroundScheduler
+
         _scheduler = BackgroundScheduler()
         _scheduler.start()
     return _scheduler
 
 
-def perform_backup(backup_type: str = 'manual', user_id: Optional[int] = None) -> str:
+def perform_backup(backup_type: str = "manual", user_id: Optional[int] = None) -> str:
     """Create a .tar.gz backup of NAS_STORAGE and record it in the database.
 
     Safe to call outside a request context (e.g. from the scheduler).
     """
     os.makedirs(config.NAS_BACKUPS, exist_ok=True)
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-    backup_name = f'backup_{timestamp}'
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    backup_name = f"backup_{timestamp}"
     archive_base = os.path.join(config.NAS_BACKUPS, backup_name)
 
-    shutil.make_archive(archive_base, 'gztar', config.NAS_STORAGE)
+    shutil.make_archive(archive_base, "gztar", config.NAS_STORAGE)
 
-    archive_path = archive_base + '.tar.gz'
+    archive_path = archive_base + ".tar.gz"
     size = os.path.getsize(archive_path)
 
     db = get_db()
     try:
         db.execute(
-            'INSERT INTO backups (name, filepath, size, type, created_by) VALUES (?, ?, ?, ?, ?)',
+            "INSERT INTO backups (name, filepath, size, type, created_by) VALUES (?, ?, ?, ?, ?)",
             (backup_name, archive_path, size, backup_type, user_id),
         )
         db.commit()
@@ -54,132 +57,140 @@ def perform_backup(backup_type: str = 'manual', user_id: Optional[int] = None) -
     return backup_name
 
 
-@backup_bp.route('/')
+@backup_bp.route("/")
 @admin_required
-def index():
+def index() -> ResponseReturnValue:
     """List all backups and show current schedule."""
     db = get_db()
     try:
-        backups = db.execute('SELECT * FROM backups ORDER BY created_at DESC').fetchall()
+        backups = db.execute(
+            "SELECT * FROM backups ORDER BY created_at DESC"
+        ).fetchall()
     finally:
         db.close()
 
     sched = _get_scheduler()
-    scheduled_job = sched.get_job('nas_backup')
+    scheduled_job = sched.get_job("nas_backup")
 
-    return render_template('backup/index.html',
-                           backups=backups,
-                           scheduled_job=scheduled_job)
+    return render_template(
+        "backup/index.html", backups=backups, scheduled_job=scheduled_job
+    )
 
 
-@backup_bp.route('/create', methods=['POST'])
+@backup_bp.route("/create", methods=["POST"])
 @admin_required
-def create():
+def create() -> ResponseReturnValue:
     """Trigger an immediate manual backup."""
     try:
-        name = perform_backup(backup_type='manual', user_id=session[SESSION_USER_ID])
-        flash(f'Backup "{name}" created successfully.', 'success')
-    except (OSError, IOError) as e:
-        flash(f'Backup failed: {e}', 'error')
+        name = perform_backup(backup_type="manual", user_id=session[SESSION_USER_ID])
+        flash(f'Backup "{name}" created successfully.', "success")
+    except OSError as e:
+        flash(f"Backup failed: {e}", "error")
 
-    return redirect(url_for('backup.index'))
+    return redirect(url_for("backup.index"))
 
 
-@backup_bp.route('/schedule', methods=['GET', 'POST'])
+@backup_bp.route("/schedule", methods=["GET", "POST"])
 @admin_required
-def schedule():
+def schedule() -> ResponseReturnValue:
     """View or update the automatic backup schedule."""
     sched = _get_scheduler()
 
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
-            interval_hours = int(request.form.get('interval', 24))
+            interval_hours = int(request.form.get("interval", 24))
             if interval_hours < 1:
-                raise ValueError('Interval must be at least 1 hour.')
+                raise ValueError("Interval must be at least 1 hour.")
         except (ValueError, TypeError):
-            flash('Invalid interval. Enter a whole number of hours (minimum 1).', 'error')
-            return redirect(url_for('backup.schedule'))
+            flash(
+                "Invalid interval. Enter a whole number of hours (minimum 1).", "error"
+            )
+            return redirect(url_for("backup.schedule"))
 
-        if sched.get_job('nas_backup'):
-            sched.remove_job('nas_backup')
+        if sched.get_job("nas_backup"):
+            sched.remove_job("nas_backup")
 
         sched.add_job(
             perform_backup,
-            'interval',
+            "interval",
             hours=interval_hours,
-            id='nas_backup',
-            kwargs={'backup_type': 'scheduled', 'user_id': session[SESSION_USER_ID]},
+            id="nas_backup",
+            kwargs={"backup_type": "scheduled", "user_id": session[SESSION_USER_ID]},
         )
 
-        flash(f'Automatic backup scheduled every {interval_hours} hour(s).', 'success')
-        return redirect(url_for('backup.index'))
+        flash(f"Automatic backup scheduled every {interval_hours} hour(s).", "success")
+        return redirect(url_for("backup.index"))
 
-    current_job = sched.get_job('nas_backup')
-    return render_template('backup/schedule.html', current_job=current_job)
+    current_job = sched.get_job("nas_backup")
+    return render_template("backup/schedule.html", current_job=current_job)
 
 
-@backup_bp.route('/restore/<int:backup_id>', methods=['POST'])
+@backup_bp.route("/restore/<int:backup_id>", methods=["POST"])
 @admin_required
-def restore(backup_id):
+def restore(backup_id: int) -> ResponseReturnValue:
     """Restore NAS storage from a backup archive."""
     db = get_db()
     try:
-        backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
+        backup = db.execute(
+            "SELECT * FROM backups WHERE id = ?", (backup_id,)
+        ).fetchone()
     finally:
         db.close()
 
     if not backup:
-        flash('Backup not found.', 'error')
-        return redirect(url_for('backup.index'))
+        flash("Backup not found.", "error")
+        return redirect(url_for("backup.index"))
 
-    archive_path = backup['filepath']
+    archive_path = backup["filepath"]
     if not os.path.exists(archive_path):
-        flash('Backup file not found on disk.', 'error')
-        return redirect(url_for('backup.index'))
+        flash("Backup file not found on disk.", "error")
+        return redirect(url_for("backup.index"))
 
     try:
         if not tarfile.is_tarfile(archive_path):
-            raise ValueError('Backup archive is not a valid tar file.')
+            raise ValueError("Backup archive is not a valid tar file.")
 
         if os.path.exists(config.NAS_STORAGE):
             shutil.rmtree(config.NAS_STORAGE)
         os.makedirs(config.NAS_STORAGE, exist_ok=True)
 
         storage_root = os.path.normpath(config.NAS_STORAGE)
-        with tarfile.open(archive_path, 'r:gz') as tar:
+        with tarfile.open(archive_path, "r:gz") as tar:
             safe_members = []
             for member in tar.getmembers():
                 dest = os.path.normpath(os.path.join(storage_root, member.name))
                 if not dest.startswith(storage_root + os.sep) and dest != storage_root:
-                    raise ValueError(f'Unsafe path in archive: {member.name}')
+                    raise ValueError(f"Unsafe path in archive: {member.name}")
                 safe_members.append(member)
-            tar.extractall(path=config.NAS_STORAGE, members=safe_members)
+            tar.extractall(path=config.NAS_STORAGE, members=safe_members)  # nosec B202 — members validated above
 
-        flash(f'Restored from backup "{backup["name"]}".', 'success')
-    except (OSError, IOError, tarfile.TarError, ValueError) as e:
-        flash(f'Restore failed: {e}', 'error')
+        flash(f'Restored from backup "{backup["name"]}".', "success")
+    except (OSError, tarfile.TarError, ValueError) as e:
+        flash(f"Restore failed: {e}", "error")
 
-    return redirect(url_for('backup.index'))
+    return redirect(url_for("backup.index"))
 
 
-@backup_bp.route('/<int:backup_id>/delete', methods=['POST'])
+@backup_bp.route("/<int:backup_id>/delete", methods=["POST"])
 @admin_required
-def delete(backup_id):
+def delete(backup_id: int) -> ResponseReturnValue:
     """Delete a backup record and its archive file."""
     db = get_db()
     try:
-        backup = db.execute('SELECT * FROM backups WHERE id = ?', (backup_id,)).fetchone()
+        backup = db.execute(
+            "SELECT * FROM backups WHERE id = ?", (backup_id,)
+        ).fetchone()
 
         if backup:
-            filepath = os.path.abspath(backup['filepath'])
+            filepath = os.path.abspath(backup["filepath"])
             backup_dir = os.path.abspath(config.NAS_BACKUPS)
             if filepath.startswith(backup_dir + os.sep) and os.path.exists(filepath):
                 os.remove(filepath)
 
-        db.execute('DELETE FROM backups WHERE id = ?', (backup_id,))
+        db.execute("DELETE FROM backups WHERE id = ?", (backup_id,))
         db.commit()
     finally:
         db.close()
 
-    flash('Backup deleted.', 'success')
-    return redirect(url_for('backup.index'))
+    flash("Backup deleted.", "success")
+    return redirect(url_for("backup.index"))
