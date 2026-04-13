@@ -59,3 +59,10 @@ confidence = "medium"
 skips = [
     "B104",  # binding to 0.0.0.0 — intentional for the NAS server
 ]
+
+# ---------------------------------------------------------------------------
+# Vulture — dead code detection
+# ---------------------------------------------------------------------------
+[tool.vulture]
+min_confidence = 80
+exclude = [".venv"]

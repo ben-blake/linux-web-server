@@ -37,9 +37,3 @@ def init_db() -> None:
         db.commit()
 
     db.close()
-
-
-def close_db(db: sqlite3.Connection) -> None:
-    """Close a database connection."""
-    if db is not None:
-        db.close()
