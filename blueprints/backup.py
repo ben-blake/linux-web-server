@@ -186,6 +186,41 @@ def schedule() -> ResponseReturnValue:
     return render_template("backup/schedule.html", current_job=current_job)
 
 
+def _resync_files_table() -> None:
+    """Rebuild the files table to match what is actually on disk after a restore.
+
+    Preserves uploaded_by attribution for any path that was already tracked
+    before the restore. Files in the archive that had no prior DB record get
+    NULL for uploaded_by.
+    """
+    db = get_db()
+    try:
+        # Remember who owned each path before we wipe records.
+        prior: dict[str, Optional[int]] = {
+            row["filepath"]: row["uploaded_by"]
+            for row in db.execute("SELECT filepath, uploaded_by FROM files").fetchall()
+        }
+
+        db.execute("DELETE FROM files")
+
+        storage_root = os.path.realpath(config.NAS_STORAGE)
+        for dirpath, _dirnames, filenames in os.walk(storage_root):
+            for name in filenames:
+                full_path = os.path.realpath(os.path.join(dirpath, name))
+                try:
+                    size = os.path.getsize(full_path)
+                except OSError:
+                    continue
+                db.execute(
+                    "INSERT INTO files (filename, filepath, size, uploaded_by)"
+                    " VALUES (?, ?, ?, ?)",
+                    (name, full_path, size, prior.get(full_path)),
+                )
+        db.commit()
+    finally:
+        db.close()
+
+
 @backup_bp.route("/restore/<int:backup_id>", methods=["POST"])
 @admin_required
 def restore(backup_id: int) -> ResponseReturnValue:
@@ -236,6 +271,8 @@ def restore(backup_id: int) -> ResponseReturnValue:
                     raise ValueError(f"Unsafe path in archive: {member.name}")
                 safe_members.append(member)
             tar.extractall(path=config.NAS_STORAGE, members=safe_members)  # nosec B202 — members validated above
+
+        _resync_files_table()
 
         flash(f'Restored from backup "{backup["name"]}".', "success")
     except (OSError, tarfile.TarError, ValueError) as e:

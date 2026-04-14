@@ -256,6 +256,44 @@ class TestBackupRestore:
         resp = admin_client.post("/backup/restore/9999", follow_redirects=True)
         assert b"not found" in resp.data.lower()
 
+    def test_restore_resyncs_files_table(self, admin_client, app):
+        """After restore the files table reflects what is on disk."""
+        import io
+
+        # Upload two files before backup
+        for name in ("alpha.txt", "beta.txt"):
+            admin_client.post(
+                "/files/upload",
+                data={"path": "", "file": (io.BytesIO(b"data"), name)},
+                content_type="multipart/form-data",
+            )
+        _create_backup(admin_client)
+        backup_id = _get_backup_id(app)
+
+        # Upload a third file AFTER backup (should disappear after restore)
+        admin_client.post(
+            "/files/upload",
+            data={"path": "", "file": (io.BytesIO(b"extra"), "gamma.txt")},
+            content_type="multipart/form-data",
+        )
+
+        # Restore — gamma.txt should vanish, alpha and beta should be back
+        admin_client.post(f"/backup/restore/{backup_id}", follow_redirects=True)
+
+        with app.app_context():
+            from database import get_db
+
+            db = get_db()
+            count = db.execute("SELECT COUNT(*) FROM files").fetchone()[0]
+            names = {
+                row["filename"]
+                for row in db.execute("SELECT filename FROM files").fetchall()
+            }
+            db.close()
+
+        assert count == 2
+        assert names == {"alpha.txt", "beta.txt"}
+
     def test_restore_missing_archive_file(self, admin_client, app):
         """If the archive file is gone from disk, an error is shown."""
         _create_backup(admin_client)
