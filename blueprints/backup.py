@@ -4,7 +4,7 @@ import tarfile
 from datetime import datetime
 from typing import Any, Optional
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
 from flask.typing import ResponseReturnValue
 
 import config
@@ -103,14 +103,50 @@ def index() -> ResponseReturnValue:
 @backup_bp.route("/create", methods=["POST"])
 @admin_required
 def create() -> ResponseReturnValue:
-    """Trigger an immediate manual backup."""
+    """Trigger an immediate manual backup and download the archive."""
     try:
-        name = perform_backup(backup_type="manual", user_id=session[SESSION_USER_ID])
-        flash(f'Backup "{name}" created successfully.', "success")
+        perform_backup(backup_type="manual", user_id=session[SESSION_USER_ID])
+        db = get_db()
+        try:
+            row = db.execute(
+                "SELECT id FROM backups ORDER BY created_at DESC LIMIT 1"
+            ).fetchone()
+        finally:
+            db.close()
+        if row:
+            return redirect(url_for("backup.download", backup_id=row["id"]))
     except OSError as e:
         flash(f"Backup failed: {e}", "error")
 
     return redirect(url_for("backup.index"))
+
+
+@backup_bp.route("/<int:backup_id>/download")
+@admin_required
+def download(backup_id: int) -> ResponseReturnValue:
+    """Download a backup archive to the local machine."""
+    db = get_db()
+    try:
+        backup = db.execute(
+            "SELECT * FROM backups WHERE id = ?", (backup_id,)
+        ).fetchone()
+    finally:
+        db.close()
+
+    if not backup:
+        flash("Backup not found.", "error")
+        return redirect(url_for("backup.index"))
+
+    archive_path = backup["filepath"]
+    if not os.path.exists(archive_path):
+        flash("Backup file not found on disk.", "error")
+        return redirect(url_for("backup.index"))
+
+    return send_file(
+        archive_path,
+        as_attachment=True,
+        download_name=backup["name"] + ".tar.gz",
+    )
 
 
 @backup_bp.route("/schedule", methods=["GET", "POST"])

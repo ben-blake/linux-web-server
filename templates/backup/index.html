@@ -62,6 +62,8 @@
                 <td class="file-actions-cell">
                     <div class="file-actions">
                         <div class="file-actions-primary">
+                            <a href="{{ url_for('backup.download', backup_id=backup['id']) }}"
+                               class="btn btn-sm btn-outline">Download</a>
                             <form method="POST" action="{{ url_for('backup.restore', backup_id=backup['id']) }}">
                                 <button type="submit" class="btn btn-sm btn-outline"
                                     onclick="return confirm('Restore from this backup? Current storage files will be replaced.')">

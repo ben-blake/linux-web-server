@@ -32,6 +32,7 @@ Web-based interface for managing a Network Attached Storage (NAS) server.
 | `SECRET_KEY` | No | `dev-secret-key-change-in-production` | Flask session signing key — set a strong random value in production |
 | `NAS_STORAGE` | No | `/srv/nas` | Absolute path to the file storage root |
 | `NAS_BACKUPS` | No | `/srv/nas-backups` | Absolute path to the backup archive directory |
+| `NAS_QUOTA_GB` | No | `5` | Storage quota in GB shown on the monitor page |
 <!-- END AUTO-GENERATED -->
 
 ## Commands

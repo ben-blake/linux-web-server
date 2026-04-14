@@ -21,6 +21,7 @@ import config
 from blueprints.auth import SESSION_PERMISSIONS, SESSION_USER_ID
 from database import get_db
 from utils.decorators import permission_required
+from utils.storage import quota_exceeded
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
 
@@ -232,6 +233,17 @@ def upload() -> ResponseReturnValue:
     name = secure_filename(file.filename)
     if not name:
         flash("Invalid file name.", "error")
+        return redirect(url_for("files.index", path=rel))
+
+    # Read size before saving to check quota without touching disk.
+    file.seek(0, 2)
+    incoming_size = file.tell()
+    file.seek(0)
+    if quota_exceeded(incoming_size):
+        flash(
+            f"Upload rejected: storage quota of {config.NAS_QUOTA_GB} GB has been reached.",
+            "error",
+        )
         return redirect(url_for("files.index", path=rel))
 
     dest = os.path.join(folder, name)

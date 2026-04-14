@@ -1,10 +1,13 @@
 from typing import Optional
 
 import psutil
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, render_template, session
 from flask.typing import ResponseReturnValue
 
+import config
+from database import get_db
 from utils.decorators import login_required
+from utils.storage import nas_used_bytes, quota_bytes
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
 
@@ -32,11 +35,12 @@ def _collect_stats() -> dict[str, object]:
         "percent": mem.percent,
     }
 
-    disk = psutil.disk_usage("/")
+    _quota = quota_bytes()
+    used_bytes = nas_used_bytes()
     disk_info = {
-        "total_gb": _bytes_to_gb(disk.total),
-        "used_gb": _bytes_to_gb(disk.used),
-        "percent": disk.percent,
+        "total_gb": config.NAS_QUOTA_GB,
+        "used_gb": _bytes_to_gb(used_bytes),
+        "percent": round(min(used_bytes / _quota * 100, 100), 1),
     }
 
     return {
@@ -46,12 +50,41 @@ def _collect_stats() -> dict[str, object]:
     }
 
 
+def _per_user_storage() -> list[dict[str, object]]:
+    """Return bytes used per user, sorted descending. Admin-only."""
+    db = get_db()
+    try:
+        rows = db.execute(
+            """
+            SELECT u.username, COALESCE(SUM(f.size), 0) AS used_bytes
+            FROM users u
+            LEFT JOIN files f ON f.uploaded_by = u.id
+            GROUP BY u.id
+            ORDER BY used_bytes DESC
+            """
+        ).fetchall()
+    finally:
+        db.close()
+    return [
+        {
+            "username": row["username"],
+            "used_gb": _bytes_to_gb(row["used_bytes"]),
+            "used_bytes": row["used_bytes"],
+        }
+        for row in rows
+    ]
+
+
 @monitor_bp.route("/")
 @login_required
 def index() -> ResponseReturnValue:
     """System monitoring dashboard — CPU, memory, and disk."""
+    from blueprints.auth import SESSION_ROLE
+
     stats = _collect_stats()
-    return render_template("monitor/index.html", **stats)
+    is_admin = session.get(SESSION_ROLE) == "admin"
+    user_storage = _per_user_storage() if is_admin else []
+    return render_template("monitor/index.html", **stats, is_admin=is_admin, user_storage=user_storage)
 
 
 @monitor_bp.route("/stats")

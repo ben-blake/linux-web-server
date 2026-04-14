@@ -12,8 +12,8 @@ import config
 
 
 def _create_backup(client):
-    """Trigger a manual backup via POST and follow redirects."""
-    return client.post("/backup/create", follow_redirects=True)
+    """Trigger a manual backup via POST (does not follow redirects)."""
+    return client.post("/backup/create", follow_redirects=False)
 
 
 def _get_backup_id(app, name_like=""):
@@ -103,9 +103,18 @@ class TestBackupCreate:
         archives = [f for f in os.listdir(config.NAS_BACKUPS) if f.endswith(".tar.gz")]
         assert len(archives) == 1
 
-    def test_create_flash_success(self, admin_client):
+    def test_create_redirects_to_download(self, admin_client):
         resp = _create_backup(admin_client)
-        assert b"created successfully" in resp.data
+        assert resp.status_code == 302
+        assert "/download" in resp.headers.get("Location", "")
+
+    def test_create_download_route_serves_file(self, admin_client, app):
+        _create_backup(admin_client)
+        backup_id = _get_backup_id(app)
+        resp = admin_client.get(f"/backup/{backup_id}/download")
+        assert resp.status_code == 200
+        assert resp.content_type in ("application/gzip", "application/x-tar", "application/octet-stream")
+        assert resp.data[:2] == b"\x1f\x8b"  # gzip magic bytes
 
     def test_create_records_in_database(self, admin_client, app):
         _create_backup(admin_client)

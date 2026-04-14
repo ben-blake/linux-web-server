@@ -50,7 +50,7 @@
                 <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
             </svg>
         </span>
-        <h3>Disk (/)</h3>
+        <h3>NAS Storage</h3>
         <p class="card-number" id="disk-value">{{ disk.percent }}%</p>
         <span class="mono-muted" id="disk-detail">{{ disk.used_gb }} GB / {{ disk.total_gb }} GB</span>
         <div class="disk-bar-wrap" style="margin-top: 0.5rem;">
@@ -60,6 +60,37 @@
         </div>
     </div>
 </div>
+
+{% if is_admin and user_storage %}
+<div style="margin-top: 2rem;">
+    <h2 style="margin-bottom: 1rem;">Storage by User</h2>
+    <div class="file-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Used</th>
+                    <th style="width: 50%;">Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in user_storage %}
+                {% set pct = [(u.used_bytes / (disk.total_gb * 1073741824) * 100), 100] | min | round(1) %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td class="mono-muted">{{ u.used_gb }} GB</td>
+                    <td>
+                        <div class="disk-bar">
+                            <div class="disk-bar-fill" style="--fill: {{ pct }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <div style="margin-top: 1.5rem;">
     <a href="{{ url_for('monitor.logs') }}" class="btn btn-primary">View System Logs</a>
