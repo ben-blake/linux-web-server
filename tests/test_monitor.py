@@ -14,7 +14,7 @@ def _make_mock_stats():
     return {
         "cpu_percent": 42.5,
         "memory": {"total_gb": 8.0, "used_gb": 4.0, "percent": 50.0},
-        "disk": {"total_gb": 100.0, "used_gb": 30.0, "percent": 30.0},
+        "disk": {"total_gb": 100.0, "used_gb": 30.0, "used_human": "30.00 GB", "percent": 30.0},
     }
 
 
@@ -86,7 +86,7 @@ class TestMonitorIndex:
     def test_disk_gb_displayed(self, admin_client):
         with _patch_stats():
             resp = admin_client.get("/monitor/")
-        assert b"30.0 GB" in resp.data
+        assert b"30.00 GB" in resp.data
         assert b"100.0 GB" in resp.data
 
     def test_logs_link_present(self, admin_client):
@@ -171,7 +171,7 @@ class TestCollectStats:
         stats = _collect_stats()
         disk = stats["disk"]
         assert isinstance(disk, dict)
-        assert set(disk) == {"total_gb", "used_gb", "percent"}
+        assert set(disk) == {"total_gb", "used_gb", "used_human", "percent"}
 
     def test_values_are_numeric(self):
         stats = _collect_stats()

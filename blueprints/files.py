@@ -21,7 +21,7 @@ import config
 from blueprints.auth import SESSION_PERMISSIONS, SESSION_USER_ID
 from database import get_db
 from utils.decorators import permission_required
-from utils.storage import quota_exceeded
+from utils.storage import nas_used_bytes, quota_bytes, quota_exceeded
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
 
@@ -60,17 +60,16 @@ def safe_join(relative: str) -> str:
 
 
 def _disk_stats_for_storage() -> Optional[dict[str, float]]:
-    root = _storage_root()
     try:
-        usage = shutil.disk_usage(root)
-        total = usage.total
-        if total <= 0:
+        _quota = quota_bytes()
+        if _quota <= 0:
             return None
-        used = total - usage.free
+        used = nas_used_bytes()
+        free = max(_quota - used, 0)
         return {
-            "free_gb": round(usage.free / (1024**3), 1),
-            "total_gb": round(total / (1024**3), 1),
-            "used_pct": round(100 * used / total, 1),
+            "free_gb": round(free / (1024**3), 1),
+            "total_gb": config.NAS_QUOTA_GB,
+            "used_pct": round(100 * used / _quota, 1),
         }
     except OSError:
         return None

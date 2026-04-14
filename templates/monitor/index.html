@@ -52,7 +52,7 @@
         </span>
         <h3>NAS Storage</h3>
         <p class="card-number" id="disk-value">{{ disk.percent }}%</p>
-        <span class="mono-muted" id="disk-detail">{{ disk.used_gb }} GB / {{ disk.total_gb }} GB</span>
+        <span class="mono-muted" id="disk-detail">{{ disk.used_human }} / {{ disk.total_gb }} GB</span>
         <div class="disk-bar-wrap" style="margin-top: 0.5rem;">
             <div class="disk-bar">
                 <div class="disk-bar-fill" id="disk-bar" style="--fill: {{ disk.percent }}%"></div>
@@ -78,7 +78,7 @@
                 {% set pct = [(u.used_bytes / (disk.total_gb * 1073741824) * 100), 100] | min | round(1) %}
                 <tr>
                     <td>{{ u.username }}</td>
-                    <td class="mono-muted">{{ u.used_gb }} GB</td>
+                    <td class="mono-muted">{{ u.used_human }}</td>
                     <td>
                         <div class="disk-bar">
                             <div class="disk-bar-fill" style="--fill: {{ pct }}%"></div>
@@ -111,7 +111,7 @@
 
                 document.getElementById("disk-value").textContent = data.disk.percent + "%";
                 document.getElementById("disk-detail").textContent =
-                    data.disk.used_gb + " GB / " + data.disk.total_gb + " GB";
+                    data.disk.used_human + " / " + data.disk.total_gb + " GB";
                 document.getElementById("disk-bar").style.setProperty("--fill", data.disk.percent + "%");
             })
             .catch(function() {});

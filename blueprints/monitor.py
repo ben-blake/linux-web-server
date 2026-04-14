@@ -24,6 +24,17 @@ def _bytes_to_gb(b: int) -> float:
     return round(b / (1024**3), 1)
 
 
+def _bytes_human(b: int) -> str:
+    """Return a human-readable size string picking the most appropriate unit."""
+    if b < 1024:
+        return f"{b} B"
+    if b < 1024**2:
+        return f"{b / 1024:.1f} KB"
+    if b < 1024**3:
+        return f"{b / 1024**2:.1f} MB"
+    return f"{b / 1024**3:.2f} GB"
+
+
 def _collect_stats() -> dict[str, object]:
     """Return a dict of current CPU, memory, and disk stats."""
     cpu_percent = psutil.cpu_percent(interval=0.1)
@@ -40,6 +51,7 @@ def _collect_stats() -> dict[str, object]:
     disk_info = {
         "total_gb": config.NAS_QUOTA_GB,
         "used_gb": _bytes_to_gb(used_bytes),
+        "used_human": _bytes_human(used_bytes),
         "percent": round(min(used_bytes / _quota * 100, 100), 1),
     }
 
@@ -68,7 +80,7 @@ def _per_user_storage() -> list[dict[str, object]]:
     return [
         {
             "username": row["username"],
-            "used_gb": _bytes_to_gb(row["used_bytes"]),
+            "used_human": _bytes_human(row["used_bytes"]),
             "used_bytes": row["used_bytes"],
         }
         for row in rows

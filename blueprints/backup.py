@@ -103,18 +103,10 @@ def index() -> ResponseReturnValue:
 @backup_bp.route("/create", methods=["POST"])
 @admin_required
 def create() -> ResponseReturnValue:
-    """Trigger an immediate manual backup and download the archive."""
+    """Trigger an immediate manual backup."""
     try:
-        perform_backup(backup_type="manual", user_id=session[SESSION_USER_ID])
-        db = get_db()
-        try:
-            row = db.execute(
-                "SELECT id FROM backups ORDER BY created_at DESC LIMIT 1"
-            ).fetchone()
-        finally:
-            db.close()
-        if row:
-            return redirect(url_for("backup.download", backup_id=row["id"]))
+        name = perform_backup(backup_type="manual", user_id=session[SESSION_USER_ID])
+        flash(f'Backup "{name}" created successfully.', "success")
     except OSError as e:
         flash(f"Backup failed: {e}", "error")
 
