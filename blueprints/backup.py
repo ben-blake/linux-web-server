@@ -187,35 +187,45 @@ def schedule() -> ResponseReturnValue:
 
 
 def _resync_files_table() -> None:
-    """Rebuild the files table to match what is actually on disk after a restore.
+    """Sync the files table with what is actually on disk after a restore.
 
-    Preserves uploaded_by attribution for any path that was already tracked
-    before the restore. Files in the archive that had no prior DB record get
-    NULL for uploaded_by.
+    Surgical approach: only remove records for files that no longer exist on
+    disk, and insert records for files on disk with no DB entry. Existing
+    records are left untouched so uploaded_by attribution is fully preserved.
     """
+    storage_root = os.path.realpath(config.NAS_STORAGE)
+
+    # Collect every file currently on disk.
+    disk_files: dict[str, int] = {}  # realpath → size
+    for dirpath, _dirnames, filenames in os.walk(storage_root):
+        for name in filenames:
+            full_path = os.path.realpath(os.path.join(dirpath, name))
+            try:
+                disk_files[full_path] = os.path.getsize(full_path)
+            except OSError:
+                pass
+
     db = get_db()
     try:
-        # Remember who owned each path before we wipe records.
-        prior: dict[str, Optional[int]] = {
-            row["filepath"]: row["uploaded_by"]
-            for row in db.execute("SELECT filepath, uploaded_by FROM files").fetchall()
+        db_rows = {
+            row["filepath"]: row["id"]
+            for row in db.execute("SELECT id, filepath FROM files").fetchall()
         }
 
-        db.execute("DELETE FROM files")
+        # Remove records for files no longer on disk.
+        for path, row_id in db_rows.items():
+            if path not in disk_files:
+                db.execute("DELETE FROM files WHERE id = ?", (row_id,))
 
-        storage_root = os.path.realpath(config.NAS_STORAGE)
-        for dirpath, _dirnames, filenames in os.walk(storage_root):
-            for name in filenames:
-                full_path = os.path.realpath(os.path.join(dirpath, name))
-                try:
-                    size = os.path.getsize(full_path)
-                except OSError:
-                    continue
+        # Insert records for files on disk that have no DB entry.
+        for path, size in disk_files.items():
+            if path not in db_rows:
                 db.execute(
                     "INSERT INTO files (filename, filepath, size, uploaded_by)"
-                    " VALUES (?, ?, ?, ?)",
-                    (name, full_path, size, prior.get(full_path)),
+                    " VALUES (?, ?, ?, NULL)",
+                    (os.path.basename(path), path, size),
                 )
+
         db.commit()
     finally:
         db.close()

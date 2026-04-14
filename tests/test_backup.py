@@ -284,15 +284,17 @@ class TestBackupRestore:
             from database import get_db
 
             db = get_db()
-            count = db.execute("SELECT COUNT(*) FROM files").fetchone()[0]
-            names = {
-                row["filename"]
-                for row in db.execute("SELECT filename FROM files").fetchall()
-            }
+            rows = db.execute(
+                "SELECT filename, uploaded_by FROM files ORDER BY filename"
+            ).fetchall()
             db.close()
 
-        assert count == 2
+        names = {r["filename"] for r in rows}
         assert names == {"alpha.txt", "beta.txt"}
+        # Ownership must be preserved — both files were uploaded by admin (id=1)
+        assert all(r["uploaded_by"] is not None for r in rows), (
+            "uploaded_by should be preserved after restore, not set to NULL"
+        )
 
     def test_restore_missing_archive_file(self, admin_client, app):
         """If the archive file is gone from disk, an error is shown."""
