@@ -18,7 +18,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 2. **"The first thing I'll show is creating a new user with limited access."**
    - Navigate to Users in the sidebar.
    - Click Create User.
-   - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write.
+   - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write, Storage Quota: 1.
    - Submit. Show the success flash and the user in the list.
 
 3. **"Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."**
@@ -68,10 +68,11 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Upload `test_files/media/screenshot.png`.
 
 4. **"Downloading is a single click."**
-   - Click Download next to `q1-summary.txt`.
+   - Click Download next to `screenshot.png`.
    - Show the file download in the browser.
 
-5. **"Renaming works on both files and folders."**
+5. **"Renaming works on both files and folders if the user has write permission."**
+   - Navigate into `documents/reports`.
    - Rename `q1-summary.txt` to `q1-report.txt`.
    - Show the success flash and updated name.
    - Navigate back to root. Rename `documents` to `docs`.
@@ -81,11 +82,11 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Log out. Log in as `viewer` / `viewer`.
    - Go to Files. Show they can browse and see the files.
    - Show that the Upload form, New Folder, Rename, and Delete buttons are hidden.
-   - Log back out. Log back in as admin.
+   - Log back out. Log back in as `admin` / `admin`.
 
 7. **"Deleting removes the item from both the filesystem and the database."**
    - Navigate into `docs/reports`.
-   - Delete `q2-report.txt` (the renamed version or the second file).
+   - Delete `q2-summary.txt`.
    - Show the success flash and the file gone from the listing.
 
 ---
@@ -104,13 +105,14 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Show a value change — CPU in particular will sometimes fluctuate.
    - **"We replaced the original hard refresh with a JavaScript fetch call to a JSON endpoint. The page stays stable and only the numbers change."**
 
-3. **"Admins have access to a logs page that shows the last 100 lines of the system log."**
+3. **"Admins have access to user stats and a logs page that shows the last 100 lines of the system log."**
+   - Point out the Storage by User table.
    - Click View System Logs.
    - Scroll through the entries. Point out timestamps and log levels.
    - **"These are read-only — there's no way to clear or write logs from the UI. This ensures visibility without risk."**
 
-4. **"Any logged-in user can see the monitor, but only admins can see the system logs."**
-   - Log out, log in as `viewer` / `viewer`, go to Monitor — stats are visible, logs are not.
+4. **"Any logged-in user can see the system stats, but only admins can see the user stats and system logs."**
+   - Log out, log in as `viewer` / `viewer`, go to Monitor — system stats are visible, user stats and logs are not.
    - Log back out and log back in as `admin` / `admin`.
 
 ---
@@ -133,20 +135,19 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - **"This schedule survives a server restart. It's saved to the database and restored automatically when the app starts."**
 
 3. **"Now let's test the restore."**
-   - Go back to Files. Delete `q1-report.txt` to simulate data loss.
-   - Confirm it's gone.
+   - Go back to Files. Delete `docs` and `media` folders to simulate data loss.
+   - Confirm they're gone.
    - Go back to Backups.
    - Click Restore next to the backup we just created.
    - Confirm the dialog.
    - Show the success flash.
-   - Go to Files and navigate into `docs/reports`.
-   - Show `q1-report.txt` is back.
+   - Go to Files and show folders are back.
+   - Navigate into the folders to show files still exist.
 
 4. **"Backups can be deleted when they're no longer needed."**
    - Go back to Backups.
    - Click Delete on the backup.
    - Show the success flash and empty list.
-   - Verify on the VM: `ls /srv/nas-backups/` — directory is empty.
 
 5. **"Only admins can access the backup section."**
    - Log out, log in as `viewer` / `viewer`, try to visit `/backup/`.
