@@ -169,3 +169,5 @@ JSON endpoint. The page stays stable and only the numbers change."
 - Switch back to the presentation slides for the Summary slide.
 - "142 automated tests, all passing. Four independent modules built and integrated
   by four people in one Flask application. Happy to take questions."
+
+  Generate CPU load command: `python3 -c "x = sum(i*i for i in range(10**8))"`
