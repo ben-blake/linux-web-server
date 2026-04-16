@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tarfile
@@ -60,6 +61,40 @@ def _get_scheduler() -> Any:
     return _scheduler
 
 
+def _manifest_path_for(archive_path: str) -> str:
+    """Attribution manifest lives next to the archive, same base name."""
+    if archive_path.endswith(".tar.gz"):
+        base = archive_path[: -len(".tar.gz")]
+    else:
+        base, _ = os.path.splitext(archive_path)
+    return base + ".meta.json"
+
+
+def _write_attribution_manifest(manifest_path: str) -> None:
+    """Snapshot current files-table attribution to JSON for later restore.
+
+    The archive itself contains only storage contents (not the DB), so we
+    persist per-file uploader info separately. On restore, this is how we
+    re-attribute files whose DB rows were removed (e.g. by a user-initiated
+    delete) between backup and restore.
+    """
+    db = get_db()
+    try:
+        rows = db.execute("SELECT filepath, uploaded_by FROM files").fetchall()
+    finally:
+        db.close()
+
+    entries = [
+        {
+            "filepath": os.path.realpath(row["filepath"]),
+            "uploaded_by": row["uploaded_by"],
+        }
+        for row in rows
+    ]
+    with open(manifest_path, "w") as f:
+        json.dump({"files": entries}, f)
+
+
 def perform_backup(backup_type: str = "manual", user_id: Optional[int] = None) -> str:
     """Create a .tar.gz backup of NAS_STORAGE and record it in the database.
 
@@ -75,6 +110,8 @@ def perform_backup(backup_type: str = "manual", user_id: Optional[int] = None) -
 
     archive_path = archive_base + ".tar.gz"
     size = os.path.getsize(archive_path)
+
+    _write_attribution_manifest(_manifest_path_for(archive_path))
 
     db = get_db()
     try:
@@ -195,15 +232,34 @@ def schedule() -> ResponseReturnValue:
     return render_template("backup/schedule.html", current_job=current_job)
 
 
-def _resync_files_table() -> None:
+def _load_attribution(manifest_path: str) -> dict[str, Optional[int]]:
+    """Return a {canonical_filepath: uploaded_by} map, or empty if missing."""
+    if not os.path.exists(manifest_path):
+        return {}
+    try:
+        with open(manifest_path) as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    attribution: dict[str, Optional[int]] = {}
+    for entry in data.get("files", []):
+        fp = entry.get("filepath")
+        if fp:
+            attribution[os.path.realpath(fp)] = entry.get("uploaded_by")
+    return attribution
+
+
+def _resync_files_table(attribution: Optional[dict[str, Optional[int]]] = None) -> None:
     """Sync the files table with what is actually on disk after a restore.
 
     Match DB rows to disk files by realpath so attribution survives even when
     DB records hold non-canonical paths (e.g. extra '/./' segments, trailing
     slashes, or legacy non-realpath inserts). Existing records are left
-    untouched — only missing files are pruned and new-on-disk files are
-    inserted with NULL uploader.
+    untouched; files missing from disk are pruned; files present on disk but
+    missing from the DB are inserted with uploader pulled from the backup's
+    attribution manifest (NULL if no manifest is available).
     """
+    attribution = attribution or {}
     storage_root = os.path.realpath(config.NAS_STORAGE)
 
     disk_files: dict[str, int] = {}
@@ -237,10 +293,11 @@ def _resync_files_table() -> None:
 
         for path, size in disk_files.items():
             if path not in db_rows:
+                uploader = attribution.get(path)
                 db.execute(
                     "INSERT INTO files (filename, filepath, size, uploaded_by)"
-                    " VALUES (?, ?, ?, NULL)",
-                    (os.path.basename(path), path, size),
+                    " VALUES (?, ?, ?, ?)",
+                    (os.path.basename(path), path, size, uploader),
                 )
 
         db.commit()
@@ -299,7 +356,8 @@ def restore(backup_id: int) -> ResponseReturnValue:
                 safe_members.append(member)
             tar.extractall(path=config.NAS_STORAGE, members=safe_members)  # nosec B202 — members validated above
 
-        _resync_files_table()
+        attribution = _load_attribution(_manifest_path_for(archive_path))
+        _resync_files_table(attribution)
 
         flash(f'Restored from backup "{backup["name"]}".', "success")
     except (OSError, tarfile.TarError, ValueError) as e:
@@ -323,6 +381,9 @@ def delete(backup_id: int) -> ResponseReturnValue:
             backup_dir = os.path.abspath(config.NAS_BACKUPS)
             if filepath.startswith(backup_dir + os.sep) and os.path.exists(filepath):
                 os.remove(filepath)
+            manifest = _manifest_path_for(filepath)
+            if manifest.startswith(backup_dir + os.sep) and os.path.exists(manifest):
+                os.remove(manifest)
 
         db.execute("DELETE FROM backups WHERE id = ?", (backup_id,))
         db.commit()

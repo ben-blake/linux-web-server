@@ -395,6 +395,70 @@ class TestBackupRestore:
             "attribution should survive non-canonical DB paths after restore"
         )
 
+    def test_restore_preserves_attribution_after_file_deletion(
+        self, admin_client, client, app
+    ):
+        """The real-world failure: alice uploads, admin backs up, alice deletes
+        her file, admin restores. Attribution must survive even though the DB
+        row was removed between backup and restore."""
+        import io
+
+        admin_client.post(
+            "/users/create",
+            data={
+                "username": "alice",
+                "password": "alicepass",
+                "role": "user",
+                "permissions": "read,write",
+            },
+        )
+
+        client.get("/logout")
+        client.post("/login", data={"username": "alice", "password": "alicepass"})
+        client.post(
+            "/files/upload",
+            data={"path": "", "file": (io.BytesIO(b"alice content"), "alice.txt")},
+            content_type="multipart/form-data",
+        )
+
+        from blueprints.monitor import _per_user_storage
+
+        with app.app_context():
+            pre = {u["username"]: int(u["used_bytes"]) for u in _per_user_storage()}
+        assert pre.get("alice", 0) > 0
+
+        # admin_client and client share a cookie jar, so swap the session
+        # back to admin before creating the backup — otherwise the POST
+        # would be rejected and no backup would actually be created.
+        client.get("/logout")
+        admin_client.post("/login", data={"username": "admin", "password": "admin"})
+        _create_backup(admin_client)
+        backup_id = _get_backup_id(app)
+
+        # Back to alice, who deletes the file she just uploaded.
+        admin_client.get("/logout")
+        client.post("/login", data={"username": "alice", "password": "alicepass"})
+        client.post("/files/delete", data={"path": "alice.txt"})
+        with app.app_context():
+            from database import get_db
+
+            db = get_db()
+            gone = db.execute("SELECT id FROM files").fetchone()
+            db.close()
+        assert gone is None, "precondition: DB row removed after delete"
+
+        # Admin restores.
+        client.get("/logout")
+        admin_client.post("/login", data={"username": "admin", "password": "admin"})
+        admin_client.post(f"/backup/restore/{backup_id}", follow_redirects=True)
+
+        with app.app_context():
+            post = {u["username"]: int(u["used_bytes"]) for u in _per_user_storage()}
+        assert post.get("alice", 0) == pre.get("alice", 0), (
+            f"alice's attributed bytes went from {pre.get('alice')} to "
+            f"{post.get('alice')} after delete-then-restore — attribution lost"
+        )
+
     def test_restore_missing_archive_file(self, admin_client, app):
         """If the archive file is gone from disk, an error is shown."""
         _create_backup(admin_client)
