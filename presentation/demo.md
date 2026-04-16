@@ -23,7 +23,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 
 3. "Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."
    - Click Create User again.
-   - Username: `viewer`, Password: `viewer`, Role: User, Permissions: Read only.
+   - Username: `viewer`, Password: `viewer1`, Role: User, Permissions: Read only.
    - Submit.
 
 4. "I can edit an existing user's role and permissions at any time."
@@ -33,17 +33,15 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Edit again and change back to User role.
 
 5. "Let me show what happens when a non-admin tries to access the user list."
-   - Log out. Log in as `viewer` / `viewer`.
+   - Log out. Log in as `viewer` / `viewer1`.
    - Try to visit `/users/` manually by typing it in the URL bar.
    - Show the 403 Forbidden page.
-   - Log back out.
 
 6. "Finally, a user can change their own password from their profile."
-   - Log in as `viewer`.
    - Go to My Profile in the sidebar.
-   - Enter current password `viewer`, new password `viewer1`, save.
+   - Enter current password `viewer1`, new password `viewer`, save.
    - Show the success flash.
-   - Log back out. Log back in as `viewer` / `viewer1` to confirm it works.
+   - Log back out. Log back in as `viewer` / `viewer` to confirm it works.
    - Log out and log back in as `admin` / `admin` to continue.
 
 ---
@@ -84,7 +82,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Show the flash error and redirect to root.
 
 7. "Now let me show what a read-only user sees from that viewer account that Ben made earlier."
-   - Log out. Log in as `viewer` / `viewer1`.
+   - Log out. Log in as `viewer` / `viewer`.
    - Go to Files. Show they can browse and see the files.
    - Show that the Upload form, New Folder, Rename, and Delete buttons are hidden.
    - Log back out. Log back in as admin.
@@ -118,7 +116,7 @@ JSON endpoint. The page stays stable and only the numbers change."
      This ensures visibility without risk."
 
 4. "Any logged-in user can see the monitor, but only admins can see the system logs."
-   - Log out, log in as `viewer` / `viewer1`, go to Monitor — stats are visible, logs are not.
+   - Log out, log in as `viewer` / `viewer`, go to Monitor — stats are visible, logs are not.
    - Log back out and log back in as `admin` / `admin`.
 
 ---
@@ -159,7 +157,7 @@ JSON endpoint. The page stays stable and only the numbers change."
    - Verify on the VM: `ls /srv/nas-backups/` — directory is empty.
 
 6. "Only admins can access the backup section."
-   - Log out, log in as `viewer` / `viewer1`, try to visit `/backup/`.
+   - Log out, log in as `viewer` / `viewer`, try to visit `/backup/`.
    - Show the 403 Forbidden page.
 
 ---
