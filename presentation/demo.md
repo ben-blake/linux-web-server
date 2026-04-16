@@ -18,7 +18,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 2. **"The first thing I'll show is creating a new user with limited access."**
    - Navigate to Users in the sidebar.
    - Click Create User.
-   - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write + Edit.
+   - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write.
    - Submit. Show the success flash and the user in the list.
 
 3. **"Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."**
