@@ -98,9 +98,11 @@
 </div>
 {% endif %}
 
+{% if is_admin %}
 <div style="margin-top: 1.5rem;">
     <a href="{{ url_for('monitor.logs') }}" class="btn btn-primary">View System Logs</a>
 </div>
+{% endif %}
 
 <script>
     function updateStats() {

@@ -44,6 +44,10 @@ class TestAuthGuards:
         assert resp.status_code == 302
         assert "login" in resp.headers.get("Location", "")
 
+    def test_logs_requires_admin(self, user_client):
+        resp = user_client.get("/monitor/logs")
+        assert resp.status_code == 403
+
     def test_regular_user_can_view_monitor(self, user_client):
         with _patch_stats():
             resp = user_client.get("/monitor/")
@@ -94,10 +98,15 @@ class TestMonitorIndex:
         assert b"30.00 GB" in resp.data
         assert b"100.0 GB" in resp.data
 
-    def test_logs_link_present(self, admin_client):
+    def test_logs_link_present_for_admin(self, admin_client):
         with _patch_stats():
             resp = admin_client.get("/monitor/")
         assert b"/monitor/logs" in resp.data
+
+    def test_logs_link_hidden_for_regular_user(self, user_client):
+        with _patch_stats():
+            resp = user_client.get("/monitor/")
+        assert b"/monitor/logs" not in resp.data
 
 
 # ---------------------------------------------------------------------------

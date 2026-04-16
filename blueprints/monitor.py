@@ -6,7 +6,7 @@ from flask.typing import ResponseReturnValue
 
 import config
 from database import get_db
-from utils.decorators import login_required
+from utils.decorators import admin_required, login_required
 from utils.storage import nas_used_bytes, quota_bytes
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
@@ -137,9 +137,9 @@ def _read_logs() -> tuple[list[str], Optional[str]]:
 
 
 @monitor_bp.route("/logs")
-@login_required
+@admin_required
 def logs() -> ResponseReturnValue:
-    """View recent system log entries."""
+    """View recent system log entries — admin only."""
     log_lines, log_source = _read_logs()
     return render_template(
         "monitor/logs.html", log_lines=log_lines, log_source=log_source
