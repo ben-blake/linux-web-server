@@ -1,12 +1,39 @@
+from typing import Optional
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask.typing import ResponseReturnValue
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import config
 from blueprints.auth import SESSION_USER_ID
 from database import get_db
 from utils.decorators import admin_required, login_required
+from utils.storage import quota_bytes, sum_user_quotas_bytes
 
 users_bp = Blueprint("users", __name__, url_prefix="/users")
+
+
+def _parse_quota_gb(raw: str) -> Optional[int]:
+    """Return storage_quota_bytes from a form field, or None if invalid.
+
+    Empty string → 0 (no per-user limit).
+    """
+    raw = (raw or "").strip()
+    if raw == "":
+        return 0
+    try:
+        gb = float(raw)
+    except ValueError:
+        return None
+    if gb < 0:
+        return None
+    return int(gb * 1024**3)
+
+
+def _quota_sum_ok(proposed_bytes: int, exclude_user_id: Optional[int] = None) -> bool:
+    """Return True if adding proposed_bytes to the sum of other user quotas
+    stays within the global NAS quota."""
+    return sum_user_quotas_bytes(exclude_user_id) + proposed_bytes <= quota_bytes()
 
 
 @users_bp.route("/")
@@ -28,9 +55,21 @@ def create_user() -> ResponseReturnValue:
         password = request.form["password"]
         role = request.form["role"]
         permissions = ",".join(request.form.getlist("permissions")) or "read"
+        quota_raw = request.form.get("storage_quota_gb", "")
 
         if not username or not password or not password.strip():
             flash("Username and password are required.", "error")
+            return render_template("users/create.html")
+
+        quota_b = _parse_quota_gb(quota_raw)
+        if quota_b is None:
+            flash("Invalid storage quota — enter a non-negative number of GB.", "error")
+            return render_template("users/create.html")
+        if not _quota_sum_ok(quota_b):
+            flash(
+                f"Storage quota would exceed the global {config.NAS_QUOTA_GB} GB limit.",
+                "error",
+            )
             return render_template("users/create.html")
 
         db = get_db()
@@ -43,12 +82,14 @@ def create_user() -> ResponseReturnValue:
                 return render_template("users/create.html")
 
             db.execute(
-                "INSERT INTO users (username, password_hash, role, permissions) VALUES (?, ?, ?, ?)",
+                "INSERT INTO users (username, password_hash, role, permissions, storage_quota_bytes)"
+                " VALUES (?, ?, ?, ?, ?)",
                 (
                     username,
                     generate_password_hash(password, method="pbkdf2:sha256"),
                     role,
                     permissions,
+                    quota_b,
                 ),
             )
             db.commit()
@@ -63,19 +104,36 @@ def create_user() -> ResponseReturnValue:
 @users_bp.route("/<int:user_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_user(user_id: int) -> ResponseReturnValue:
-    db = get_db()
-    try:
-        if request.method == "POST":
-            role = request.form["role"]
-            permissions = ",".join(request.form.getlist("permissions")) or "read"
+    if request.method == "POST":
+        role = request.form["role"]
+        permissions = ",".join(request.form.getlist("permissions")) or "read"
+        quota_raw = request.form.get("storage_quota_gb", "")
+
+        quota_b = _parse_quota_gb(quota_raw)
+        if quota_b is None:
+            flash("Invalid storage quota — enter a non-negative number of GB.", "error")
+            return redirect(url_for("users.edit_user", user_id=user_id))
+        if not _quota_sum_ok(quota_b, exclude_user_id=user_id):
+            flash(
+                f"Storage quota would exceed the global {config.NAS_QUOTA_GB} GB limit.",
+                "error",
+            )
+            return redirect(url_for("users.edit_user", user_id=user_id))
+
+        db = get_db()
+        try:
             db.execute(
-                "UPDATE users SET role = ?, permissions = ? WHERE id = ?",
-                (role, permissions, user_id),
+                "UPDATE users SET role = ?, permissions = ?, storage_quota_bytes = ? WHERE id = ?",
+                (role, permissions, quota_b, user_id),
             )
             db.commit()
-            flash("User updated.", "success")
-            return redirect(url_for("users.list_users"))
+        finally:
+            db.close()
+        flash("User updated.", "success")
+        return redirect(url_for("users.list_users"))
 
+    db = get_db()
+    try:
         user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     finally:
         db.close()

@@ -14,7 +14,12 @@ def _make_mock_stats():
     return {
         "cpu_percent": 42.5,
         "memory": {"total_gb": 8.0, "used_gb": 4.0, "percent": 50.0},
-        "disk": {"total_gb": 100.0, "used_gb": 30.0, "used_human": "30.00 GB", "percent": 30.0},
+        "disk": {
+            "total_gb": 100.0,
+            "used_gb": 30.0,
+            "used_human": "30.00 GB",
+            "percent": 30.0,
+        },
     }
 
 

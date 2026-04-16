@@ -20,6 +20,15 @@ def init_db() -> None:
     with open(os.path.join(os.path.dirname(__file__), "schema.sql")) as f:
         db.executescript(f.read())
 
+    # Additive migration for pre-existing databases: add columns introduced
+    # after first release. SQLite has no "ADD COLUMN IF NOT EXISTS".
+    cols = {row["name"] for row in db.execute("PRAGMA table_info(users)").fetchall()}
+    if "storage_quota_bytes" not in cols:
+        db.execute(
+            "ALTER TABLE users ADD COLUMN storage_quota_bytes INTEGER NOT NULL DEFAULT 0"
+        )
+        db.commit()
+
     # Seed default admin if not exists
     existing = db.execute(
         "SELECT id FROM users WHERE username = ?", ("admin",)

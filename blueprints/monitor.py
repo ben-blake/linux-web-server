@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 import psutil
 from flask import Blueprint, jsonify, render_template, session
@@ -62,13 +62,16 @@ def _collect_stats() -> dict[str, object]:
     }
 
 
-def _per_user_storage() -> list[dict[str, object]]:
-    """Return bytes used per user, sorted descending. Admin-only."""
+def _per_user_storage() -> list[dict[str, Any]]:
+    """Return bytes used and quota per user, sorted by usage descending.
+    Admin-only."""
     db = get_db()
     try:
         rows = db.execute(
             """
-            SELECT u.username, COALESCE(SUM(f.size), 0) AS used_bytes
+            SELECT u.username,
+                   u.storage_quota_bytes AS quota_bytes,
+                   COALESCE(SUM(f.size), 0) AS used_bytes
             FROM users u
             LEFT JOIN files f ON f.uploaded_by = u.id
             GROUP BY u.id
@@ -82,6 +85,10 @@ def _per_user_storage() -> list[dict[str, object]]:
             "username": row["username"],
             "used_human": _bytes_human(row["used_bytes"]),
             "used_bytes": row["used_bytes"],
+            "quota_bytes": row["quota_bytes"] or 0,
+            "quota_human": (
+                _bytes_human(row["quota_bytes"]) if row["quota_bytes"] else "—"
+            ),
         }
         for row in rows
     ]
@@ -96,7 +103,9 @@ def index() -> ResponseReturnValue:
     stats = _collect_stats()
     is_admin = session.get(SESSION_ROLE) == "admin"
     user_storage = _per_user_storage() if is_admin else []
-    return render_template("monitor/index.html", **stats, is_admin=is_admin, user_storage=user_storage)
+    return render_template(
+        "monitor/index.html", **stats, is_admin=is_admin, user_storage=user_storage
+    )
 
 
 @monitor_bp.route("/stats")

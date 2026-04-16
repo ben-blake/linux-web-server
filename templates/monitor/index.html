@@ -70,15 +70,21 @@
                 <tr>
                     <th>User</th>
                     <th>Used</th>
-                    <th style="width: 50%;">Usage</th>
+                    <th>Quota</th>
+                    <th style="width: 40%;">Usage</th>
                 </tr>
             </thead>
             <tbody>
                 {% for u in user_storage %}
-                {% set pct = [(u.used_bytes / (disk.total_gb * 1073741824) * 100), 100] | min | round(1) %}
+                {% if u.quota_bytes %}
+                    {% set pct = [(u.used_bytes / u.quota_bytes * 100), 100] | min | round(1) %}
+                {% else %}
+                    {% set pct = [(u.used_bytes / (disk.total_gb * 1073741824) * 100), 100] | min | round(1) %}
+                {% endif %}
                 <tr>
                     <td>{{ u.username }}</td>
                     <td class="mono-muted">{{ u.used_human }}</td>
+                    <td class="mono-muted">{{ u.quota_human }}</td>
                     <td>
                         <div class="disk-bar">
                             <div class="disk-bar-fill" style="--fill: {{ pct }}%"></div>
