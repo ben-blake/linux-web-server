@@ -21,7 +21,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write + Edit.
    - Submit. Show the success flash and the user in the list.
 
-3. "Now I'll create a read-only user to demonstrate how permissions restrict access."
+3. "Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."
    - Click Create User again.
    - Username: `viewer`, Password: `viewer`, Role: User, Permissions: Read only.
    - Submit.
@@ -83,7 +83,7 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - In the URL bar, manually type `?path=../etc` after `/files/`.
    - Show the flash error and redirect to root.
 
-7. "Now let me show what a read-only user sees."
+7. "Now let me show what a read-only user sees from that viewer account that Ben made earlier."
    - Log out. Log in as `viewer` / `viewer1`.
    - Go to Files. Show they can browse and see the files.
    - Show that the Upload form, New Folder, Rename, and Delete buttons are hidden.
@@ -111,19 +111,13 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - "We replaced the original hard refresh with a JavaScript fetch call to a
 JSON endpoint. The page stays stable and only the numbers change."
 
-3. "Let me generate some CPU load to make the change visible."
-   - In the VM terminal: `python3 -c "x = sum(i*i for i in range(10**8))"`
-   - Switch back to the browser and wait for the next 10-second update.
-   - Show the CPU value jump.
-   - Kill the process in the terminal (Ctrl+C).
-
-4. "The logs page shows the last 100 lines of the system log."
+3. "The logs page shows the last 100 lines of the system log."
    - Click View System Logs.
    - Scroll through the entries. Point out timestamps and log levels.
    - "These are read-only — there's no way to clear or write logs from the UI.
-     Visibility without risk."
+     This ensures visibility without risk."
 
-5. "Any logged-in user can see the monitor, not just admins."
+4. "Any logged-in user can see the monitor, not just admins."
    - Log out, log in as `viewer` / `viewer1`, go to Monitor — stats are visible.
    - Log back out and log back in as `admin` / `admin`.
 
@@ -139,11 +133,9 @@ JSON endpoint. The page stays stable and only the numbers change."
    - Click Create Backup Now.
    - Show the success flash and the backup entry with its real size in KB.
 
-2. "I can verify the archive was written to disk."
-   - Switch to the VM terminal: `ls -lh /srv/nas-backups/`
-   - Show the `.tar.gz` file.
+2. "You can download the backup to store an extra copy if you want. In a production system this would be stored in a seperate server."
 
-3. "We can schedule backups to run automatically."
+3. "We can also schedule backups to run automatically."
    - Click Configure Schedule.
    - Select Every 1 hour, click Save Schedule.
    - Show the success flash, redirect to the backup list showing the scheduled job.
