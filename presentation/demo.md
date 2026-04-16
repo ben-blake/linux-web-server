@@ -117,8 +117,8 @@ JSON endpoint. The page stays stable and only the numbers change."
    - "These are read-only — there's no way to clear or write logs from the UI.
      This ensures visibility without risk."
 
-4. "Any logged-in user can see the monitor, not just admins."
-   - Log out, log in as `viewer` / `viewer1`, go to Monitor — stats are visible.
+4. "Any logged-in user can see the monitor, but only admins can see the system logs."
+   - Log out, log in as `viewer` / `viewer1`, go to Monitor — stats are visible, logs are not.
    - Log back out and log back in as `admin` / `admin`.
 
 ---
