@@ -112,7 +112,11 @@ class TestBackupCreate:
         backup_id = _get_backup_id(app)
         resp = admin_client.get(f"/backup/{backup_id}/download")
         assert resp.status_code == 200
-        assert resp.content_type in ("application/gzip", "application/x-tar", "application/octet-stream")
+        assert resp.content_type in (
+            "application/gzip",
+            "application/x-tar",
+            "application/octet-stream",
+        )
         assert resp.data[:2] == b"\x1f\x8b"  # gzip magic bytes
 
     def test_create_records_in_database(self, admin_client, app):
@@ -294,6 +298,101 @@ class TestBackupRestore:
         # Ownership must be preserved — both files were uploaded by admin (id=1)
         assert all(r["uploaded_by"] is not None for r in rows), (
             "uploaded_by should be preserved after restore, not set to NULL"
+        )
+
+    def test_restore_preserves_per_user_attribution(self, admin_client, client, app):
+        """After restore, the monitor's per-user storage query must show the
+        original uploader's bytes, not zero. Regression test for the bug where
+        a non-admin user's uploads lost attribution after restore."""
+        import io
+
+        # Create a non-admin user with write permission
+        admin_client.post(
+            "/users/create",
+            data={
+                "username": "alice",
+                "password": "alicepass",
+                "role": "user",
+                "permissions": "read,write",
+            },
+        )
+
+        # Log in as alice and upload a file
+        client.get("/logout")
+        client.post("/login", data={"username": "alice", "password": "alicepass"})
+        client.post(
+            "/files/upload",
+            data={"path": "", "file": (io.BytesIO(b"hello world"), "alice.txt")},
+            content_type="multipart/form-data",
+        )
+
+        # Capture per-user storage before backup
+        from blueprints.monitor import _per_user_storage
+
+        with app.app_context():
+            pre = {u["username"]: int(u["used_bytes"]) for u in _per_user_storage()}
+        assert pre.get("alice", 0) > 0, "precondition: alice should have bytes"
+
+        # Back in as admin, create a backup, then restore
+        client.get("/logout")
+        admin_client.post("/login", data={"username": "admin", "password": "admin"})
+        _create_backup(admin_client)
+        backup_id = _get_backup_id(app)
+        admin_client.post(f"/backup/restore/{backup_id}", follow_redirects=True)
+
+        # Per-user storage should match exactly what it was before the backup
+        with app.app_context():
+            post = {u["username"]: int(u["used_bytes"]) for u in _per_user_storage()}
+        assert post.get("alice", 0) == pre.get("alice", 0), (
+            f"alice's attributed bytes changed from {pre.get('alice')} to {post.get('alice')} after restore"
+        )
+
+    def test_restore_preserves_attribution_with_noncanonical_db_path(
+        self, admin_client, app
+    ):
+        """If the DB has a filepath that doesn't match disk realpath exactly
+        (injected ./ segments, trailing slash, etc.), restore must still
+        preserve uploaded_by attribution.
+
+        This is the most likely cause of the production bug — DB records
+        from an older code path may have filepaths that don't match what
+        os.walk returns after extraction."""
+        import io
+
+        # Upload a file (admin = user id 1)
+        admin_client.post(
+            "/files/upload",
+            data={"path": "", "file": (io.BytesIO(b"data"), "a.txt")},
+            content_type="multipart/form-data",
+        )
+
+        # Mangle the DB filepath to a non-canonical-but-valid form
+        with app.app_context():
+            from database import get_db
+
+            db = get_db()
+            row = db.execute("SELECT id, filepath FROM files").fetchone()
+            noncanonical = row["filepath"].replace("/", "/./", 1)
+            db.execute(
+                "UPDATE files SET filepath = ? WHERE id = ?",
+                (noncanonical, row["id"]),
+            )
+            db.commit()
+            db.close()
+
+        _create_backup(admin_client)
+        backup_id = _get_backup_id(app)
+        admin_client.post(f"/backup/restore/{backup_id}", follow_redirects=True)
+
+        with app.app_context():
+            from database import get_db
+
+            db = get_db()
+            rows = db.execute("SELECT uploaded_by FROM files").fetchall()
+            db.close()
+
+        assert all(r["uploaded_by"] is not None for r in rows), (
+            "attribution should survive non-canonical DB paths after restore"
         )
 
     def test_restore_missing_archive_file(self, admin_client, app):

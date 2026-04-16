@@ -4,7 +4,16 @@ import tarfile
 from datetime import datetime
 from typing import Any, Optional
 
-from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 
 import config
@@ -189,14 +198,15 @@ def schedule() -> ResponseReturnValue:
 def _resync_files_table() -> None:
     """Sync the files table with what is actually on disk after a restore.
 
-    Surgical approach: only remove records for files that no longer exist on
-    disk, and insert records for files on disk with no DB entry. Existing
-    records are left untouched so uploaded_by attribution is fully preserved.
+    Match DB rows to disk files by realpath so attribution survives even when
+    DB records hold non-canonical paths (e.g. extra '/./' segments, trailing
+    slashes, or legacy non-realpath inserts). Existing records are left
+    untouched — only missing files are pruned and new-on-disk files are
+    inserted with NULL uploader.
     """
     storage_root = os.path.realpath(config.NAS_STORAGE)
 
-    # Collect every file currently on disk.
-    disk_files: dict[str, int] = {}  # realpath → size
+    disk_files: dict[str, int] = {}
     for dirpath, _dirnames, filenames in os.walk(storage_root):
         for name in filenames:
             full_path = os.path.realpath(os.path.join(dirpath, name))
@@ -207,17 +217,24 @@ def _resync_files_table() -> None:
 
     db = get_db()
     try:
-        db_rows = {
-            row["filepath"]: row["id"]
-            for row in db.execute("SELECT id, filepath FROM files").fetchall()
-        }
+        # Key DB rows by realpath so we don't orphan records whose stored
+        # filepath differs from the canonical form returned by os.walk.
+        db_rows: dict[str, tuple[int, str]] = {}
+        for row in db.execute("SELECT id, filepath FROM files").fetchall():
+            canonical = os.path.realpath(row["filepath"])
+            db_rows[canonical] = (row["id"], row["filepath"])
 
-        # Remove records for files no longer on disk.
-        for path, row_id in db_rows.items():
-            if path not in disk_files:
+        for canonical, (row_id, stored_path) in db_rows.items():
+            if canonical not in disk_files:
                 db.execute("DELETE FROM files WHERE id = ?", (row_id,))
+            elif stored_path != canonical:
+                # Normalize legacy non-canonical path to keep future matches
+                # cheap and accurate.
+                db.execute(
+                    "UPDATE files SET filepath = ? WHERE id = ?",
+                    (canonical, row_id),
+                )
 
-        # Insert records for files on disk that have no DB entry.
         for path, size in disk_files.items():
             if path not in db_rows:
                 db.execute(
