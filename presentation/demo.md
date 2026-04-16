@@ -11,33 +11,33 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 
 **Start:** Login page is visible in the browser.
 
-1. "We'll start by logging in as the default admin account."
+1. **"We'll start by logging in as the default admin account."**
    - Enter `admin` / `admin`, click Log In.
    - Land on the dashboard. Point out the user count, file count, and last backup.
 
-2. "The first thing I'll show is creating a new user with limited access."
+2. **"The first thing I'll show is creating a new user with limited access."**
    - Navigate to Users in the sidebar.
    - Click Create User.
    - Username: `ben`, Password: `ben`, Role: User, Permissions: Read + Write + Edit.
    - Submit. Show the success flash and the user in the list.
 
-3. "Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."
+3. **"Now I'll also create a read-only user that will be used demonstrate how permissions restrict access when we move onto the files demonstration."**
    - Click Create User again.
    - Username: `viewer`, Password: `viewer1`, Role: User, Permissions: Read only.
    - Submit.
 
-4. "I can edit an existing user's role and permissions at any time."
+4. **"I can edit an existing user's role and permissions at any time."**
    - Click Edit next to `ben`.
    - Change Role to Admin, add all permissions, save.
    - Show the updated row in the list.
    - Edit again and change back to User role.
 
-5. "Let me show what happens when a non-admin tries to access the user list."
+5. **"Let me show what happens when a non-admin tries to access the user list."**
    - Log out. Log in as `viewer` / `viewer1`.
    - Try to visit `/users/` manually by typing it in the URL bar.
    - Show the 403 Forbidden page.
 
-6. "Finally, a user can change their own password from their profile."
+6. **"Finally, a user can change their own password from their profile."**
    - Go to My Profile in the sidebar.
    - Enter current password `viewer1`, new password `viewer`, save.
    - Show the success flash.
@@ -50,16 +50,16 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 
 **Start:** Logged in as admin, on the dashboard.
 
-1. "The file manager lets any user with read permission browse the NAS storage."
+1. **"The file manager lets any user with read permission browse the NAS storage."**
    - Click Files in the sidebar.
    - Show the empty root. Point out the disk usage stats in the header.
 
-2. "I'll create the folder structure first, then upload files into it."
+2. **"I'll create the folder structure first, then upload files into it."**
    - Create folder: `documents`.
    - Navigate into `documents`. Create folder: `reports`.
    - Navigate back to root using the breadcrumb. Create folder: `media`.
 
-3. "Now let's upload some files."
+3. **"Now let's upload some files."**
    - Navigate into `documents/reports`.
    - Upload `test_files/documents/reports/q1-summary.txt`.
    - Upload `test_files/documents/reports/q2-summary.txt`.
@@ -67,27 +67,23 @@ Before demo: server is running, ngrok is running, browser is open to the login p
    - Navigate into `media`.
    - Upload `test_files/media/screenshot.png`.
 
-4. "Downloading is a single click."
+4. **"Downloading is a single click."**
    - Click Download next to `q1-summary.txt`.
    - Show the file download in the browser.
 
-5. "Renaming works on both files and folders."
+5. **"Renaming works on both files and folders."**
    - Rename `q1-summary.txt` to `q1-report.txt`.
    - Show the success flash and updated name.
    - Navigate back to root. Rename `documents` to `docs`.
    - Navigate into `docs/reports` to show the file is still there.
 
-6. "All paths are validated server-side. Let me show the path traversal protection."
-   - In the URL bar, manually type `?path=../etc` after `/files/`.
-   - Show the flash error and redirect to root.
-
-7. "Now let me show what a read-only user sees from that viewer account that Ben made earlier."
+6. **"Now let me show what a read-only user sees from that viewer account that Ben made earlier."**
    - Log out. Log in as `viewer` / `viewer`.
    - Go to Files. Show they can browse and see the files.
    - Show that the Upload form, New Folder, Rename, and Delete buttons are hidden.
    - Log back out. Log back in as admin.
 
-8. "Deleting removes the item from both the filesystem and the database."
+7. **"Deleting removes the item from both the filesystem and the database."**
    - Navigate into `docs/reports`.
    - Delete `q2-report.txt` (the renamed version or the second file).
    - Show the success flash and the file gone from the listing.
@@ -98,24 +94,22 @@ Before demo: server is running, ngrok is running, browser is open to the login p
 
 **Start:** Logged in as admin, on the dashboard.
 
-1. "The monitoring page shows live system stats for the host running the NAS."
+1. **"The monitoring page shows live system stats for the host running the NAS."**
    - Click Monitor in the sidebar.
    - Point out the three cards: CPU, Memory, Disk.
    - Note the current values and the visual progress bars.
 
-2. "These values update automatically every 10 seconds without a full page reload."
+2. **"These values update automatically every 10 seconds without a full page reload."**
    - Watch the page for one update cycle (10 seconds).
-   - Show a value change — CPU in particular will fluctuate.
-   - "We replaced the original hard refresh with a JavaScript fetch call to a
-JSON endpoint. The page stays stable and only the numbers change."
+   - Show a value change — CPU in particular will sometimes fluctuate.
+   - **"We replaced the original hard refresh with a JavaScript fetch call to a JSON endpoint. The page stays stable and only the numbers change."**
 
-3. "The logs page shows the last 100 lines of the system log."
+3. **"Admins have access to a logs page that shows the last 100 lines of the system log."**
    - Click View System Logs.
    - Scroll through the entries. Point out timestamps and log levels.
-   - "These are read-only — there's no way to clear or write logs from the UI.
-     This ensures visibility without risk."
+   - **"These are read-only — there's no way to clear or write logs from the UI. This ensures visibility without risk."**
 
-4. "Any logged-in user can see the monitor, but only admins can see the system logs."
+4. **"Any logged-in user can see the monitor, but only admins can see the system logs."**
    - Log out, log in as `viewer` / `viewer`, go to Monitor — stats are visible, logs are not.
    - Log back out and log back in as `admin` / `admin`.
 
@@ -125,22 +119,20 @@ JSON endpoint. The page stays stable and only the numbers change."
 
 **Start:** Logged in as `admin` / `admin`, files already in /srv/nas from Section 2.
 
-1. "The backup system creates a compressed snapshot of everything in NAS storage."
+1. **"The backup system creates a compressed snapshot of everything in NAS storage."**
    - Click Backups in the sidebar.
    - Show the empty backup list.
    - Click Create Backup Now.
    - Show the success flash and the backup entry with its real size in KB.
+   - **"You can download the backup to store an extra copy if you want. In a production system this would be stored in a seperate server."**
 
-2. "You can download the backup to store an extra copy if you want. In a production system this would be stored in a seperate server."
-
-3. "We can also schedule backups to run automatically."
+2. **"We can also schedule backups to run automatically."**
    - Click Configure Schedule.
    - Select Every 1 hour, click Save Schedule.
    - Show the success flash, redirect to the backup list showing the scheduled job.
-   - "This schedule survives a server restart.
-     It's saved to the database and restored automatically when the app starts."
+   - **"This schedule survives a server restart. It's saved to the database and restored automatically when the app starts."**
 
-4. "Now let's test the restore."
+3. **"Now let's test the restore."**
    - Go back to Files. Delete `q1-report.txt` to simulate data loss.
    - Confirm it's gone.
    - Go back to Backups.
@@ -150,13 +142,13 @@ JSON endpoint. The page stays stable and only the numbers change."
    - Go to Files and navigate into `docs/reports`.
    - Show `q1-report.txt` is back.
 
-5. "Backups can be deleted when they're no longer needed."
+4. **"Backups can be deleted when they're no longer needed."**
    - Go back to Backups.
    - Click Delete on the backup.
    - Show the success flash and empty list.
    - Verify on the VM: `ls /srv/nas-backups/` — directory is empty.
 
-6. "Only admins can access the backup section."
+5. **"Only admins can access the backup section."**
    - Log out, log in as `viewer` / `viewer`, try to visit `/backup/`.
    - Show the 403 Forbidden page.
 
